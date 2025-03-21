@@ -48,6 +48,13 @@ export interface UserSession {
   lastActivity: Date;
   ipAddress?: string;
   inactivityTime?: number;
+  geolocation?: {
+    latitude: number;
+    longitude: number;
+    city?: string;
+    state?: string;
+    country?: string;
+  };
 }
 
 export interface SystemLog {
@@ -55,7 +62,7 @@ export interface SystemLog {
   timestamp: Date;
   userName: string;
   userId: string;
-  accessLevel: 'admin' | 'user' | 'guest';
+  accessLevel: 'admin' | 'user' | 'guest' | 'system';
   action: string;
   details: string;
   origin: {
@@ -66,8 +73,9 @@ export interface SystemLog {
     geolocation?: {
       latitude: number;
       longitude: number;
-      city: string;
-      country: string;
+      city?: string;
+      state?: string;
+      country?: string;
     };
     network: {
       type: string;

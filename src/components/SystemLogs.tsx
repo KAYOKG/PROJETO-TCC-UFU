@@ -118,9 +118,9 @@ export function SystemLogs() {
                     <td className="px-6 py-4 whitespace-nowrap">
                       <div className="text-sm font-medium text-gray-900">{log.userName}</div>
                       <div className="text-sm text-gray-500">{log.userId}</div>
-                      {log.origin?.ipAddress && (
-                        <div className="text-xs text-gray-400">IP: {log.origin.ipAddress}</div>
-                      )}
+                      <div className="text-xs text-gray-400">
+                        IP: {log.origin?.ipAddress || 'Não disponível'}
+                      </div>
                     </td>
                     <td className="px-6 py-4 whitespace-nowrap">
                       <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${
@@ -160,14 +160,24 @@ export function SystemLogs() {
                     <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
                       {log.origin?.geolocation ? (
                         <>
-                          <div className="text-gray-900">{log.origin.geolocation.city}</div>
-                          <div className="text-gray-500">{log.origin.geolocation.country}</div>
-                          <div className="text-xs text-gray-400">
-                            {log.origin.geolocation.latitude.toFixed(6)}, {log.origin.geolocation.longitude.toFixed(6)}
+                          <div className="text-gray-900">
+                            Lat: {log.origin.geolocation.latitude.toFixed(6)}
+                          </div>
+                          <div className="text-gray-900">
+                            Long: {log.origin.geolocation.longitude.toFixed(6)}
+                          </div>
+                          <div className="text-gray-500">
+                            {log.origin.geolocation.city || 'Cidade não disponível'}
+                          </div>
+                          <div className="text-gray-500">
+                            {log.origin.geolocation.state || 'Estado não disponível'}
+                          </div>
+                          <div className="text-gray-500">
+                            {log.origin.geolocation.country || 'País não disponível'}
                           </div>
                         </>
                       ) : (
-                        <span className="text-gray-500">Não disponível</span>
+                        <span className="text-gray-500">Localização não disponível</span>
                       )}
                     </td>
                     <td className="px-6 py-4 whitespace-nowrap text-sm">
