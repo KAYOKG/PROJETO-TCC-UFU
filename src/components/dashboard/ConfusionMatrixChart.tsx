@@ -120,7 +120,7 @@ export function ConfusionMatrixChart() {
     );
   }
 
-  if (!data) {
+  if (!data?.ml || !data?.rules) {
     return (
       <div className="bg-white rounded-lg shadow p-6">
         <h3 className="text-lg font-semibold flex items-center gap-2 mb-4">

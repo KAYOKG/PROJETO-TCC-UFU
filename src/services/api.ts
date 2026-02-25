@@ -80,11 +80,13 @@ export async function fetchFeatureStats() {
 
 export async function fetchLearningCurve() {
   const res = await fetch(`${API_BASE}/model/learning-curve`);
+  if (!res.ok) return null;
   return res.json();
 }
 
 export async function fetchConfusionMatrix() {
   const res = await fetch(`${API_BASE}/model/confusion-matrix`);
+  if (!res.ok) return null;
   return res.json();
 }
 
