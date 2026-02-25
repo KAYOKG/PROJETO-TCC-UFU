@@ -283,14 +283,22 @@ async function main() {
   const mlCm = mlMetrics.confusionMatrix;
   console.log("\n--- Confusion Matrix (ML) ---");
   console.log(`              Pred Normal  Pred Suspeito`);
-  console.log(`Real Normal      ${String(mlCm.tn).padStart(5)}          ${String(mlCm.fp).padStart(5)}`);
-  console.log(`Real Suspeito    ${String(mlCm.fn).padStart(5)}          ${String(mlCm.tp).padStart(5)}`);
+  console.log(
+    `Real Normal      ${String(mlCm.tn).padStart(5)}          ${String(mlCm.fp).padStart(5)}`,
+  );
+  console.log(
+    `Real Suspeito    ${String(mlCm.fn).padStart(5)}          ${String(mlCm.tp).padStart(5)}`,
+  );
 
   const rCm = rulesMetrics.confusionMatrix;
   console.log("\n--- Confusion Matrix (Rules) ---");
   console.log(`              Pred Normal  Pred Suspeito`);
-  console.log(`Real Normal      ${String(rCm.tn).padStart(5)}          ${String(rCm.fp).padStart(5)}`);
-  console.log(`Real Suspeito    ${String(rCm.fn).padStart(5)}          ${String(rCm.tp).padStart(5)}`);
+  console.log(
+    `Real Normal      ${String(rCm.tn).padStart(5)}          ${String(rCm.fp).padStart(5)}`,
+  );
+  console.log(
+    `Real Suspeito    ${String(rCm.fn).padStart(5)}          ${String(rCm.tp).padStart(5)}`,
+  );
 
   // Save metrics to database
   const modelVersion = `v1.0-${Date.now()}`;

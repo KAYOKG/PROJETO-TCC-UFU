@@ -54,10 +54,19 @@ router.get("/feature-stats", async (_req: Request, res: Response) => {
 
 router.get("/confusion-matrix", (_req: Request, res: Response) => {
   try {
-    const cmPath = path.join(__dirname, "..", "..", "data", "trained", "confusion_matrix.json");
+    const cmPath = path.join(
+      __dirname,
+      "..",
+      "..",
+      "data",
+      "trained",
+      "confusion_matrix.json",
+    );
 
     if (!fs.existsSync(cmPath)) {
-      res.status(404).json({ error: "No confusion matrix data found. Run training first." });
+      res
+        .status(404)
+        .json({ error: "No confusion matrix data found. Run training first." });
       return;
     }
 
