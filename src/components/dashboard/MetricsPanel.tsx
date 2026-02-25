@@ -1,6 +1,6 @@
+import { AlertTriangle, Award, Brain, Shield, TrendingUp } from 'lucide-react';
 import React, { useEffect, useState } from 'react';
 import { fetchTrainingMetrics } from '../../services/api';
-import { Award, Brain, Shield, TrendingUp } from 'lucide-react';
 
 interface Metrics {
   model_version: string;
@@ -48,7 +48,7 @@ export function MetricsPanel() {
         setMlMetrics(ml ?? null);
         setRulesMetrics(rules ?? null);
       })
-      .catch(() => {})
+      .catch(() => { })
       .finally(() => setLoading(false));
   }, []);
 
@@ -121,6 +121,23 @@ export function MetricsPanel() {
           </div>
         </>
       )}
+
+      <div className="mt-4 bg-amber-50 border border-amber-200 rounded-lg p-4">
+        <div className="flex items-start gap-2">
+          <AlertTriangle className="h-5 w-5 text-amber-600 mt-0.5 shrink-0" />
+          <div>
+            <h4 className="font-semibold text-amber-900 text-sm mb-1">Limitação: Dataset Sintético</h4>
+            <p className="text-sm text-amber-800">
+              As métricas acima foram obtidas com um dataset sintético cujos perfis de comportamento
+              (normal vs. suspeito) possuem padrões bem definidos e separáveis por design. Em um cenário
+              real, os comportamentos legítimos e maliciosos tendem a se sobrepor de forma mais sutil,
+              produzindo separação menos clara entre classes. Espera-se, portanto, que as métricas em
+              produção sejam inferiores às reportadas aqui. Esta ressalva é fundamental para a seção de
+              limitações da monografia.
+            </p>
+          </div>
+        </div>
+      </div>
     </div>
   );
 }

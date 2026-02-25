@@ -1,15 +1,24 @@
-import { SystemLog } from '../types';
+import { SystemLog } from "../types";
 
-const API_BASE = 'http://localhost:3001/api';
+const API_BASE = "http://localhost:3001/api";
 
 function serializeLog(log: SystemLog) {
   return {
     ...log,
-    timestamp: log.timestamp instanceof Date ? log.timestamp.toISOString() : log.timestamp,
+    timestamp:
+      log.timestamp instanceof Date
+        ? log.timestamp.toISOString()
+        : log.timestamp,
     session: {
       ...log.session,
-      startTime: log.session.startTime instanceof Date ? log.session.startTime.toISOString() : log.session.startTime,
-      lastActivity: log.session.lastActivity instanceof Date ? log.session.lastActivity.toISOString() : log.session.lastActivity,
+      startTime:
+        log.session.startTime instanceof Date
+          ? log.session.startTime.toISOString()
+          : log.session.startTime,
+      lastActivity:
+        log.session.lastActivity instanceof Date
+          ? log.session.lastActivity.toISOString()
+          : log.session.lastActivity,
     },
   };
 }
@@ -17,8 +26,8 @@ function serializeLog(log: SystemLog) {
 export async function persistLog(log: SystemLog): Promise<void> {
   try {
     await fetch(`${API_BASE}/logs`, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
       body: JSON.stringify(serializeLog(log)),
     });
   } catch {
@@ -29,8 +38,8 @@ export async function persistLog(log: SystemLog): Promise<void> {
 export async function persistLogsBatch(logs: SystemLog[]): Promise<void> {
   try {
     await fetch(`${API_BASE}/logs/batch`, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
       body: JSON.stringify(logs.map(serializeLog)),
     });
   } catch {
@@ -38,10 +47,13 @@ export async function persistLogsBatch(logs: SystemLog[]): Promise<void> {
   }
 }
 
-export async function fetchAlerts(params?: { userId?: string; minScore?: number }) {
+export async function fetchAlerts(params?: {
+  userId?: string;
+  minScore?: number;
+}) {
   const query = new URLSearchParams();
-  if (params?.userId) query.set('userId', params.userId);
-  if (params?.minScore) query.set('minScore', String(params.minScore));
+  if (params?.userId) query.set("userId", params.userId);
+  if (params?.minScore) query.set("minScore", String(params.minScore));
   const res = await fetch(`${API_BASE}/alerts?${query}`);
   return res.json();
 }
@@ -63,6 +75,16 @@ export async function fetchTrainingMetrics() {
 
 export async function fetchFeatureStats() {
   const res = await fetch(`${API_BASE}/model/feature-stats`);
+  return res.json();
+}
+
+export async function fetchLearningCurve() {
+  const res = await fetch(`${API_BASE}/model/learning-curve`);
+  return res.json();
+}
+
+export async function fetchConfusionMatrix() {
+  const res = await fetch(`${API_BASE}/model/confusion-matrix`);
   return res.json();
 }
 

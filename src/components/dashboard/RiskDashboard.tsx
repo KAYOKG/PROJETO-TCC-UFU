@@ -1,11 +1,12 @@
+import { Brain, Loader2, Settings2 } from 'lucide-react';
 import React, { useEffect } from 'react';
 import { useMLStore } from '../../store/useMLStore';
 import { AlertsPanel } from './AlertsPanel';
-import { UserRiskScore } from './UserRiskScore';
 import { AnomalyChart } from './AnomalyChart';
 import { FeatureImportance } from './FeatureImportance';
+import { LearningCurveChart } from './LearningCurveChart';
 import { MetricsPanel } from './MetricsPanel';
-import { Brain, Loader2, Settings2 } from 'lucide-react';
+import { UserRiskScore } from './UserRiskScore';
 
 export function RiskDashboard() {
   const { modelLoaded, modelLoading, initializeModel, loadDashboardData, threshold, setThreshold } = useMLStore();
@@ -37,19 +38,17 @@ export function RiskDashboard() {
             />
             <span className="text-sm font-medium text-gray-700 w-12">{(threshold * 100).toFixed(0)}%</span>
           </div>
-          <div className={`flex items-center gap-2 px-3 py-1.5 rounded-full text-sm ${
-            modelLoaded
+          <div className={`flex items-center gap-2 px-3 py-1.5 rounded-full text-sm ${modelLoaded
               ? 'bg-green-100 text-green-800'
               : modelLoading
-              ? 'bg-yellow-100 text-yellow-800'
-              : 'bg-gray-100 text-gray-600'
-          }`}>
+                ? 'bg-yellow-100 text-yellow-800'
+                : 'bg-gray-100 text-gray-600'
+            }`}>
             {modelLoading ? (
               <Loader2 className="h-4 w-4 animate-spin" />
             ) : (
-              <div className={`h-2 w-2 rounded-full ${
-                modelLoaded ? 'bg-green-500' : 'bg-gray-400'
-              }`} />
+              <div className={`h-2 w-2 rounded-full ${modelLoaded ? 'bg-green-500' : 'bg-gray-400'
+                }`} />
             )}
             {modelLoaded ? 'Modelo Ativo' : modelLoading ? 'Carregando...' : 'Modelo Offline'}
           </div>
@@ -64,6 +63,9 @@ export function RiskDashboard() {
         <AlertsPanel />
         <UserRiskScore />
       </div>
+
+      {/* Learning Curve - Overfitting Analysis */}
+      <LearningCurveChart />
 
       {/* Charts */}
       <AnomalyChart />

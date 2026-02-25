@@ -52,6 +52,49 @@ router.get("/feature-stats", async (_req: Request, res: Response) => {
   }
 });
 
+router.get("/confusion-matrix", (_req: Request, res: Response) => {
+  try {
+    const cmPath = path.join(__dirname, "..", "..", "data", "trained", "confusion_matrix.json");
+
+    if (!fs.existsSync(cmPath)) {
+      res.status(404).json({ error: "No confusion matrix data found. Run training first." });
+      return;
+    }
+
+    const data = JSON.parse(fs.readFileSync(cmPath, "utf-8"));
+    res.json(data);
+  } catch (error) {
+    console.error("Error serving confusion matrix:", error);
+    res.status(500).json({ error: "Failed to serve confusion matrix" });
+  }
+});
+
+router.get("/learning-curve", (_req: Request, res: Response) => {
+  try {
+    const curvePath = path.join(
+      __dirname,
+      "..",
+      "..",
+      "data",
+      "trained",
+      "learning_curve.json",
+    );
+
+    if (!fs.existsSync(curvePath)) {
+      res
+        .status(404)
+        .json({ error: "No learning curve data found. Run training first." });
+      return;
+    }
+
+    const data = JSON.parse(fs.readFileSync(curvePath, "utf-8"));
+    res.json(data);
+  } catch (error) {
+    console.error("Error serving learning curve:", error);
+    res.status(500).json({ error: "Failed to serve learning curve" });
+  }
+});
+
 router.get("/metrics", async (_req: Request, res: Response) => {
   try {
     const db = await getDb();
