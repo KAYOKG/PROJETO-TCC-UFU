@@ -1,77 +1,81 @@
-import { create } from 'zustand';
-import { SystemLog, UserSession } from '../types';
-import { useGeolocated } from 'react-geolocated';
-import { useIp } from 'react-ip';
+import { create } from "zustand";
+import { persistLog } from "../services/api";
+import { SystemLog, UserSession } from "../types";
+import { useMLStore } from "./useMLStore";
 
 interface LogState {
   logs: SystemLog[];
   currentSession: UserSession;
-  addLog: (log: Omit<SystemLog, 'id' | 'timestamp' | 'session'>) => void;
+  addLog: (log: Omit<SystemLog, "id" | "timestamp" | "session">) => void;
   updateSession: (sessionData: Partial<UserSession>) => void;
-  trackUserInteraction: (element: HTMLElement, interactionType: 'click' | 'navigation' | 'configuration') => void;
+  trackUserInteraction: (
+    element: HTMLElement,
+    interactionType: "click" | "navigation" | "configuration",
+  ) => void;
   updateGeolocation: (coords: { latitude: number; longitude: number }) => void;
   updateIpAddress: (ip: string) => void;
 }
 
-const INACTIVITY_THRESHOLD = 5 * 60 * 1000; // 5 minutes in milliseconds
+const INACTIVITY_THRESHOLD = 5 * 60 * 1000;
 
-const getCurrentNetworkInfo = (): SystemLog['origin']['network'] => {
-  const connection = (navigator as any).connection;
-  
+const getCurrentNetworkInfo = (): SystemLog["origin"]["network"] => {
+  const connection = (
+    navigator as unknown as {
+      connection?: { type?: string; downlink?: number; rtt?: number };
+    }
+  ).connection;
+
   if (!connection) {
-    return {
-      type: 'Não disponível',
-      speed: 'Não disponível',
-      latency: 0
-    };
+    return { type: "Não disponível", speed: "Não disponível", latency: 0 };
   }
 
   return {
-    type: connection.type || 'Não disponível',
-    speed: connection.downlink ? `${connection.downlink} Mbps` : 'Não disponível',
-    latency: connection.rtt || 0
+    type: connection.type || "Não disponível",
+    speed: connection.downlink
+      ? `${connection.downlink} Mbps`
+      : "Não disponível",
+    latency: connection.rtt || 0,
   };
 };
 
 export const useLogStore = create<LogState>((set, get) => {
-  // Initialize inactivity tracking
   let lastActivityTime = new Date();
+
   const updateLastActivity = () => {
     const currentTime = new Date();
     const inactivityTime = currentTime.getTime() - lastActivityTime.getTime();
     lastActivityTime = currentTime;
-    
+
     if (inactivityTime >= INACTIVITY_THRESHOLD) {
       const state = get();
       state.addLog({
-        userName: state.currentSession.userName || 'Sistema',
-        userId: state.currentSession.userId || 'system',
-        accessLevel: 'system',
-        action: 'Inatividade Detectada',
+        userName: state.currentSession.userName || "Sistema",
+        userId: state.currentSession.userId || "system",
+        accessLevel: "system",
+        action: "Inatividade Detectada",
         details: `Usuário inativo por ${Math.floor(inactivityTime / 1000 / 60)} minutos`,
         origin: {
-          module: 'Sistema',
+          module: "Sistema",
           device: navigator.platform,
           browser: navigator.userAgent,
           network: getCurrentNetworkInfo(),
         },
-        result: 'success',
-        interactionType: 'system',
+        result: "success",
+        interactionType: "system",
       });
     }
 
-    set(state => ({
+    set((state) => ({
       currentSession: {
         ...state.currentSession,
         lastActivity: currentTime,
-        inactivityTime
-      }
+        inactivityTime,
+      },
     }));
   };
 
-  // Set up activity listeners
-  if (typeof window !== 'undefined') {
-    ['mousedown', 'keydown', 'scroll', 'touchstart'].forEach(eventType => {
+  if (typeof window !== "undefined") {
+    ["mousedown", "keydown", "scroll", "touchstart"].forEach((eventType) => {
       window.addEventListener(eventType, updateLastActivity);
     });
   }
@@ -82,94 +86,104 @@ export const useLogStore = create<LogState>((set, get) => {
       startTime: new Date(),
       loginAttempts: 0,
       lastActivity: new Date(),
-      inactivityTime: 0
+      inactivityTime: 0,
     },
     updateGeolocation: (coords) => {
-      set(state => ({
+      set((state) => ({
         currentSession: {
           ...state.currentSession,
           geolocation: {
             latitude: coords.latitude,
             longitude: coords.longitude,
-            city: 'Localização capturada',
-            country: 'Localização capturada'
-          }
-        }
+            city: "Localização capturada",
+            country: "Localização capturada",
+          },
+        },
       }));
     },
     updateIpAddress: (ip) => {
-      set(state => ({
+      set((state) => ({
         currentSession: {
           ...state.currentSession,
-          ipAddress: ip
-        }
+          ipAddress: ip,
+        },
       }));
     },
-    addLog: async (logData) => {
+    addLog: (logData) => {
       const networkInfo = getCurrentNetworkInfo();
       const state = get();
 
+      // Capture logs BEFORE inserting newLog to match training semantics
+      // (training excludes the current log from the recentLogs window)
+      const previousLogs = state.logs.slice(0, 50);
+
+      const newLog: SystemLog = {
+        id: Math.random().toString(36).substr(2, 9),
+        timestamp: new Date(),
+        session: state.currentSession,
+        ...logData,
+        origin: {
+          ...logData.origin,
+          network: networkInfo,
+          geolocation: state.currentSession.geolocation,
+          ipAddress: state.currentSession.ipAddress,
+        },
+      };
+
+      set((s) => ({
+        logs: [newLog, ...s.logs],
+        currentSession: {
+          ...s.currentSession,
+          lastActivity: new Date(),
+        },
+      }));
+
+      persistLog(newLog);
+
+      useMLStore.getState().analyzeLog(newLog, previousLogs);
+    },
+    updateSession: (sessionData) =>
       set((state) => ({
-        logs: [
-          {
-            id: Math.random().toString(36).substr(2, 9),
-            timestamp: new Date(),
-            session: state.currentSession,
-            origin: {
-              ...logData.origin,
-              network: networkInfo,
-              geolocation: state.currentSession.geolocation,
-              ipAddress: state.currentSession.ipAddress
-            },
-            ...logData,
-          },
-          ...state.logs,
-        ],
         currentSession: {
           ...state.currentSession,
-          lastActivity: new Date()
-        }
-      }));
-    },
-    updateSession: (sessionData) => set((state) => ({
-      currentSession: {
-        ...state.currentSession,
-        ...sessionData
-      }
-    })),
-    trackUserInteraction: (element: HTMLElement, interactionType: 'click' | 'navigation' | 'configuration') => {
+          ...sessionData,
+        },
+      })),
+    trackUserInteraction: (
+      element: HTMLElement,
+      interactionType: "click" | "navigation" | "configuration",
+    ) => {
       const state = get();
       state.addLog({
-        userName: state.currentSession.userName || 'Sistema',
-        userId: state.currentSession.userId || 'system',
-        accessLevel: 'system',
+        userName: state.currentSession.userName || "Sistema",
+        userId: state.currentSession.userId || "system",
+        accessLevel: "system",
         action: `Interação do Usuário - ${interactionType}`,
         details: `Interação com elemento: ${element.tagName.toLowerCase()}`,
         origin: {
-          module: 'Interface do Usuário',
+          module: "Interface do Usuário",
           device: navigator.platform,
           browser: navigator.userAgent,
           network: getCurrentNetworkInfo(),
         },
-        result: 'success',
+        result: "success",
         interactionType,
         elementInfo: {
           id: element.id,
           className: element.className,
           text: element.textContent?.trim(),
-          type: element.getAttribute('type') || undefined
-        }
+          type: element.getAttribute("type") || undefined,
+        },
       });
-    }
+    },
   };
 });
 
-// Add click tracking to the entire document
-if (typeof document !== 'undefined') {
-  document.addEventListener('click', (e) => {
+if (typeof document !== "undefined") {
+  document.addEventListener("click", (e) => {
     const element = e.target as HTMLElement;
     if (element) {
-      useLogStore.getState().trackUserInteraction(element, 'click');
+      useLogStore.getState().trackUserInteraction(element, "click");
     }
   });
 }

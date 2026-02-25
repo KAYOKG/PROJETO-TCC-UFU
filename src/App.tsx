@@ -8,12 +8,13 @@ import { ContractForm } from './components/forms/ContractForm';
 import { ContractPreview } from './components/ContractPreview';
 import { ContractManagement } from './components/ContractManagement';
 import { SystemLogs } from './components/SystemLogs';
+import { RiskDashboard } from './components/dashboard/RiskDashboard';
 import { Client, Company, Contract } from './types';
-import { Coffee, Users, Building2, FileText, Plus, Activity } from 'lucide-react';
+import { Coffee, Users, Building2, FileText, Plus, Activity, Brain } from 'lucide-react';
 import { useLogStore } from './store/useLogStore';
 
 function App() {
-  const [activeTab, setActiveTab] = useState<'clients' | 'companies' | 'contracts' | 'management' | 'logs'>('clients');
+  const [activeTab, setActiveTab] = useState<'clients' | 'companies' | 'contracts' | 'management' | 'logs' | 'dashboard'>('clients');
   const [showClientForm, setShowClientForm] = useState(false);
   const [clients, setClients] = useState<Client[]>([]);
   const [company, setCompany] = useState<Company | null>(null);
@@ -265,6 +266,18 @@ function App() {
                 <Activity className="h-5 w-5" />
                 <span>Logs do Sistema</span>
               </Link>
+              <Link
+                to="/dashboard"
+                onClick={() => setActiveTab('dashboard')}
+                className={`flex items-center space-x-2 px-4 py-2 rounded-md ${
+                  activeTab === 'dashboard'
+                    ? 'bg-purple-600 text-white'
+                    : 'text-gray-600 hover:bg-purple-100'
+                }`}
+              >
+                <Brain className="h-5 w-5" />
+                <span>Dashboard ML</span>
+              </Link>
             </nav>
           </div>
 
@@ -394,6 +407,10 @@ function App() {
             <Route
               path="/logs"
               element={<SystemLogs />}
+            />
+            <Route
+              path="/dashboard"
+              element={<RiskDashboard />}
             />
           </Routes>
         </div>

@@ -8,10 +8,16 @@ pnpm-debug.log*
 lerna-debug.log*
 
 node_modules
-.bolt
 dist
 dist-ssr
 *.local
+
+# Server data
+server/data/*.db
+server/data/trained/
+server/data/synthetic/
+server/data/hyperparam_results.json
+server/node_modules
 
 # Editor directories and files
 .vscode/*
