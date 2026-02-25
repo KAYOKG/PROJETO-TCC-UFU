@@ -1,37 +1,48 @@
-import React, { useState, useEffect } from 'react';
-import { BrowserRouter, Routes, Route, Link } from 'react-router-dom';
-import { Layout } from './components/Layout';
-import { ClientForm } from './components/forms/ClientForm';
+import AddIcon from '@mui/icons-material/Add';
+import BusinessIcon from '@mui/icons-material/Business';
+import LocalCafeIcon from '@mui/icons-material/LocalCafe';
+import Alert from '@mui/material/Alert';
+import Box from '@mui/material/Box';
+import Button from '@mui/material/Button';
+import Card from '@mui/material/Card';
+import CardContent from '@mui/material/CardContent';
+import Snackbar from '@mui/material/Snackbar';
+import Typography from '@mui/material/Typography';
+import { useEffect, useState } from 'react';
+import { BrowserRouter, Route, Routes, useNavigate } from 'react-router-dom';
 import { ClientList } from './components/ClientList';
-import { CompanyForm } from './components/forms/CompanyForm';
-import { ContractForm } from './components/forms/ContractForm';
-import { ContractPreview } from './components/ContractPreview';
 import { ContractManagement } from './components/ContractManagement';
+import { ContractPreview } from './components/ContractPreview';
+import { Layout } from './components/Layout';
 import { SystemLogs } from './components/SystemLogs';
 import { RiskDashboard } from './components/dashboard/RiskDashboard';
-import { Client, Company, Contract } from './types';
-import { Coffee, Users, Building2, FileText, Plus, Activity, Brain } from 'lucide-react';
+import { ClientForm } from './components/forms/ClientForm';
+import { CompanyForm } from './components/forms/CompanyForm';
+import { ContractForm } from './components/forms/ContractForm';
 import { useLogStore } from './store/useLogStore';
+import { Client, Company, Contract } from './types';
 
-function App() {
-  const [activeTab, setActiveTab] = useState<'clients' | 'companies' | 'contracts' | 'management' | 'logs' | 'dashboard'>('clients');
+function AppContent() {
+  const navigate = useNavigate();
   const [showClientForm, setShowClientForm] = useState(false);
   const [clients, setClients] = useState<Client[]>([]);
   const [company, setCompany] = useState<Company | null>(null);
   const [contracts, setContracts] = useState<Contract[]>([]);
   const [selectedContract, setSelectedContract] = useState<Contract | null>(null);
-  
+  const [snackbar, setSnackbar] = useState<{ open: boolean; message: string; severity: 'success' | 'error' }>({
+    open: false, message: '', severity: 'success',
+  });
+
   const addLog = useLogStore((state) => state.addLog);
   const updateSession = useLogStore((state) => state.updateSession);
 
   useEffect(() => {
-    // Simular tentativas de login
-    updateSession({
-      loginAttempts: 1,
-      startTime: new Date(),
-      lastActivity: new Date()
-    });
+    updateSession({ loginAttempts: 1, startTime: new Date(), lastActivity: new Date() });
   }, []);
+
+  const notify = (message: string, severity: 'success' | 'error' = 'success') => {
+    setSnackbar({ open: true, message, severity });
+  };
 
   const getUserInfo = () => ({
     userName: 'Admin',
@@ -42,117 +53,80 @@ function App() {
   });
 
   const handleClientSubmit = (clientData: Omit<Client, 'id'>) => {
-    const newClient = {
-      ...clientData,
-      id: Math.random().toString(36).substr(2, 9)
-    };
+    const newClient = { ...clientData, id: Math.random().toString(36).substr(2, 9) };
     setClients([...clients, newClient]);
     setShowClientForm(false);
+    notify(`Cliente ${newClient.name} cadastrado com sucesso`);
 
     const { userName, userId, accessLevel, device, browser } = getUserInfo();
     addLog({
-      userName,
-      userId,
-      accessLevel,
+      userName, userId, accessLevel,
       action: 'Cadastro de Cliente',
       details: `Cliente ${newClient.name} cadastrado com sucesso`,
-      origin: {
-        module: 'Clientes',
-        device,
-        browser,
-      },
+      origin: { module: 'Clientes', device, browser },
       result: 'success',
     });
   };
 
   const handleClientEdit = (updatedClient: Client) => {
-    setClients(clients.map(client => 
-      client.id === updatedClient.id ? updatedClient : client
-    ));
+    setClients(clients.map(client => client.id === updatedClient.id ? updatedClient : client));
+    notify(`Cliente ${updatedClient.name} atualizado`);
 
     const { userName, userId, accessLevel, device, browser } = getUserInfo();
     addLog({
-      userName,
-      userId,
-      accessLevel,
+      userName, userId, accessLevel,
       action: 'Edição de Cliente',
       details: `Cliente ${updatedClient.name} atualizado`,
-      origin: {
-        module: 'Clientes',
-        device,
-        browser,
-      },
+      origin: { module: 'Clientes', device, browser },
       result: 'success',
     });
   };
 
   const handleClientDelete = (clientId: string) => {
     const client = clients.find(c => c.id === clientId);
-    setClients(clients.filter(client => client.id !== clientId));
+    setClients(clients.filter(c => c.id !== clientId));
+    notify(`Cliente ${client?.name} removido`);
 
     const { userName, userId, accessLevel, device, browser } = getUserInfo();
     addLog({
-      userName,
-      userId,
-      accessLevel,
+      userName, userId, accessLevel,
       action: 'Exclusão de Cliente',
       details: `Cliente ${client?.name} removido`,
-      origin: {
-        module: 'Clientes',
-        device,
-        browser,
-      },
+      origin: { module: 'Clientes', device, browser },
       result: 'success',
     });
   };
 
   const handleCompanySubmit = (companyData: Omit<Company, 'id'>) => {
-    const updatedCompany = company ? {
-      ...companyData,
-      id: company.id
-    } : {
-      ...companyData,
-      id: Math.random().toString(36).substr(2, 9)
-    };
+    const isUpdate = !!company;
+    const updatedCompany = company
+      ? { ...companyData, id: company.id }
+      : { ...companyData, id: Math.random().toString(36).substr(2, 9) };
     setCompany(updatedCompany);
+    notify(`Empresa ${updatedCompany.name} ${isUpdate ? 'atualizada' : 'cadastrada'}`);
 
     const { userName, userId, accessLevel, device, browser } = getUserInfo();
     addLog({
-      userName,
-      userId,
-      accessLevel,
-      action: company ? 'Atualização de Empresa' : 'Cadastro de Empresa',
-      details: `Empresa ${updatedCompany.name} ${company ? 'atualizada' : 'cadastrada'}`,
-      origin: {
-        module: 'Empresa',
-        device,
-        browser,
-      },
+      userName, userId, accessLevel,
+      action: isUpdate ? 'Atualização de Empresa' : 'Cadastro de Empresa',
+      details: `Empresa ${updatedCompany.name} ${isUpdate ? 'atualizada' : 'cadastrada'}`,
+      origin: { module: 'Empresa', device, browser },
       result: 'success',
     });
   };
 
   const handleContractSubmit = (contractData: Omit<Contract, 'id' | 'status'>) => {
-    const newContract = {
-      ...contractData,
-      id: Math.random().toString(36).substr(2, 9),
-      status: 'pending' as const
-    };
+    const newContract = { ...contractData, id: Math.random().toString(36).substr(2, 9), status: 'pending' as const };
     setContracts([...contracts, newContract]);
     setSelectedContract(newContract);
+    notify('Contrato criado com sucesso');
 
     const { userName, userId, accessLevel, device, browser } = getUserInfo();
     addLog({
-      userName,
-      userId,
-      accessLevel,
+      userName, userId, accessLevel,
       action: 'Criação de Contrato',
       details: `Contrato criado entre ${newContract.seller.name} e ${newContract.buyer.name}`,
-      origin: {
-        module: 'Contratos',
-        device,
-        browser,
-      },
+      origin: { module: 'Contratos', device, browser },
       result: 'success',
     });
   };
@@ -162,16 +136,10 @@ function App() {
       if (contract.id === contractId) {
         const { userName, userId, accessLevel, device, browser } = getUserInfo();
         addLog({
-          userName,
-          userId,
-          accessLevel,
+          userName, userId, accessLevel,
           action: 'Atualização de Status',
           details: `Status do contrato entre ${contract.seller.name} e ${contract.buyer.name} alterado para ${status}`,
-          origin: {
-            module: 'Gestão de Contratos',
-            device,
-            browser,
-          },
+          origin: { module: 'Gestão de Contratos', device, browser },
           result: 'success',
         });
         return { ...contract, status };
@@ -182,239 +150,160 @@ function App() {
 
   const handleContractDelete = (contractId: string) => {
     const contract = contracts.find(c => c.id === contractId);
-    setContracts(contracts.filter(contract => contract.id !== contractId));
+    setContracts(contracts.filter(c => c.id !== contractId));
+    notify('Contrato removido');
 
     const { userName, userId, accessLevel, device, browser } = getUserInfo();
     addLog({
-      userName,
-      userId,
-      accessLevel,
+      userName, userId, accessLevel,
       action: 'Exclusão de Contrato',
       details: `Contrato entre ${contract?.seller.name} e ${contract?.buyer.name} removido`,
-      origin: {
-        module: 'Gestão de Contratos',
-        device,
-        browser,
-      },
+      origin: { module: 'Gestão de Contratos', device, browser },
       result: 'success',
     });
   };
 
   return (
-    <BrowserRouter>
-      <Layout>
-        <div className="max-w-7xl mx-auto">
-          <div className="mb-8">
-            <nav className="flex space-x-4">
-              <Link
-                to="/"
-                onClick={() => setActiveTab('clients')}
-                className={`flex items-center space-x-2 px-4 py-2 rounded-md ${
-                  activeTab === 'clients'
-                    ? 'bg-brown-600 text-white'
-                    : 'text-gray-600 hover:bg-brown-100'
-                }`}
-              >
-                <Users className="h-5 w-5" />
-                <span>Clientes</span>
-              </Link>
-              <Link
-                to="/company"
-                onClick={() => setActiveTab('companies')}
-                className={`flex items-center space-x-2 px-4 py-2 rounded-md ${
-                  activeTab === 'companies'
-                    ? 'bg-brown-600 text-white'
-                    : 'text-gray-600 hover:bg-brown-100'
-                }`}
-              >
-                <Building2 className="h-5 w-5" />
-                <span>Empresa</span>
-              </Link>
-              <Link
-                to="/contracts"
-                onClick={() => setActiveTab('contracts')}
-                className={`flex items-center space-x-2 px-4 py-2 rounded-md ${
-                  activeTab === 'contracts'
-                    ? 'bg-brown-600 text-white'
-                    : 'text-gray-600 hover:bg-brown-100'
-                }`}
-              >
-                <FileText className="h-5 w-5" />
-                <span>Contratos</span>
-              </Link>
-              <Link
-                to="/management"
-                onClick={() => setActiveTab('management')}
-                className={`flex items-center space-x-2 px-4 py-2 rounded-md ${
-                  activeTab === 'management'
-                    ? 'bg-brown-600 text-white'
-                    : 'text-gray-600 hover:bg-brown-100'
-                }`}
-              >
-                <FileText className="h-5 w-5" />
-                <span>Gestão de Contratos</span>
-              </Link>
-              <Link
-                to="/logs"
-                onClick={() => setActiveTab('logs')}
-                className={`flex items-center space-x-2 px-4 py-2 rounded-md ${
-                  activeTab === 'logs'
-                    ? 'bg-brown-600 text-white'
-                    : 'text-gray-600 hover:bg-brown-100'
-                }`}
-              >
-                <Activity className="h-5 w-5" />
-                <span>Logs do Sistema</span>
-              </Link>
-              <Link
-                to="/dashboard"
-                onClick={() => setActiveTab('dashboard')}
-                className={`flex items-center space-x-2 px-4 py-2 rounded-md ${
-                  activeTab === 'dashboard'
-                    ? 'bg-purple-600 text-white'
-                    : 'text-gray-600 hover:bg-purple-100'
-                }`}
-              >
-                <Brain className="h-5 w-5" />
-                <span>Dashboard ML</span>
-              </Link>
-            </nav>
-          </div>
-
-          <Routes>
-            <Route
-              path="/"
-              element={
-                <div className="bg-white rounded-lg shadow-sm p-6">
-                  {showClientForm ? (
-                    <>
-                      <h2 className="text-2xl font-semibold mb-6">Cadastrar Novo Cliente</h2>
-                      <ClientForm onSubmit={handleClientSubmit} clients={clients} />
-                      <div className="mt-4">
-                        <button
-                          onClick={() => setShowClientForm(false)}
-                          className="text-gray-600 hover:text-gray-900"
-                        >
-                          Voltar para lista
-                        </button>
-                      </div>
-                    </>
-                  ) : (
-                    <div className="space-y-6">
-                      <div className="flex justify-between items-center">
-                        <h2 className="text-2xl font-semibold">Clientes</h2>
-                        <button
-                          onClick={() => setShowClientForm(true)}
-                          className="flex items-center space-x-2 px-4 py-2 bg-brown-600 text-white rounded-md hover:bg-brown-700"
-                        >
-                          <Plus className="h-5 w-5" />
-                          <span>Novo Cliente</span>
-                        </button>
-                      </div>
-                      <ClientList
-                        clients={clients}
-                        onEdit={handleClientEdit}
-                        onDelete={handleClientDelete}
-                      />
-                    </div>
-                  )}
-                </div>
-              }
-            />
-            <Route
-              path="/company"
-              element={
-                <div className="bg-white rounded-lg shadow-sm p-6">
-                  <h2 className="text-2xl font-semibold mb-6">
-                    {company ? 'Dados da Empresa' : 'Cadastrar Empresa'}
-                  </h2>
-                  <CompanyForm company={company} onSubmit={handleCompanySubmit} />
-                </div>
-              }
-            />
-            <Route
-              path="/contracts"
-              element={
-                <div className="bg-white rounded-lg shadow-sm p-6">
-                  <h2 className="text-2xl font-semibold mb-6">Gerar Novo Contrato</h2>
-                  {!company ? (
-                    <div className="text-center py-8">
-                      <Building2 className="h-12 w-12 mx-auto text-brown-600 mb-4" />
-                      <p className="text-lg text-gray-600">
-                        Por favor, cadastre a empresa primeiro para gerar contratos
-                      </p>
-                    </div>
-                  ) : clients.length < 2 ? (
-                    <div className="text-center py-8">
-                      <Coffee className="h-12 w-12 mx-auto text-brown-600 mb-4" />
-                      <p className="text-lg text-gray-600">
-                        Por favor, cadastre pelo menos dois clientes para gerar um contrato
-                      </p>
-                    </div>
-                  ) : (
-                    <>
-                      <ContractForm clients={clients} onSubmit={handleContractSubmit} />
-                      
-                      {selectedContract && (
-                        <div className="mt-8">
-                          <h3 className="text-xl font-semibold mb-4">Visualização do Contrato</h3>
-                          <ContractPreview
-                            contract={selectedContract}
-                            onConfirm={() => {
-                              handleContractStatusUpdate(selectedContract.id, 'active');
-                              setActiveTab('management');
-                            }}
-                          />
-                        </div>
-                      )}
-                      
-                      {contracts.length > 0 && !selectedContract && (
-                        <div className="mt-8">
-                          <h3 className="text-xl font-semibold mb-4">Contratos Existentes</h3>
-                          <div className="grid gap-4">
-                            {contracts.map((contract) => (
-                              <div
-                                key={contract.id}
-                                className="border rounded-lg p-4 cursor-pointer hover:bg-gray-50"
-                                onClick={() => setSelectedContract(contract)}
-                              >
-                                <h4 className="font-semibold">
+    <Layout>
+      <Routes>
+        <Route
+          path="/"
+          element={
+            showClientForm ? (
+              <Card>
+                <CardContent>
+                  <Typography variant="h5" gutterBottom>Cadastrar Novo Cliente</Typography>
+                  <ClientForm onSubmit={handleClientSubmit} clients={clients} />
+                  <Button onClick={() => setShowClientForm(false)} sx={{ mt: 2 }}>Voltar para lista</Button>
+                </CardContent>
+              </Card>
+            ) : (
+              <Box>
+                <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 3 }}>
+                  <Typography variant="h5">Clientes</Typography>
+                  <Button variant="contained" startIcon={<AddIcon />} onClick={() => setShowClientForm(true)}>
+                    Novo Cliente
+                  </Button>
+                </Box>
+                <ClientList clients={clients} onEdit={handleClientEdit} onDelete={handleClientDelete} />
+              </Box>
+            )
+          }
+        />
+        <Route
+          path="/company"
+          element={
+            <Card>
+              <CardContent>
+                <Typography variant="h5" gutterBottom>
+                  {company ? 'Dados da Empresa' : 'Cadastrar Empresa'}
+                </Typography>
+                <CompanyForm company={company} onSubmit={handleCompanySubmit} />
+              </CardContent>
+            </Card>
+          }
+        />
+        <Route
+          path="/contracts"
+          element={
+            <Card>
+              <CardContent>
+                <Typography variant="h5" gutterBottom>Gerar Novo Contrato</Typography>
+                {!company ? (
+                  <Box sx={{ textAlign: 'center', py: 8 }}>
+                    <BusinessIcon sx={{ fontSize: 48, color: 'primary.main', mb: 2 }} />
+                    <Typography color="text.secondary">
+                      Por favor, cadastre a empresa primeiro para gerar contratos
+                    </Typography>
+                  </Box>
+                ) : clients.length < 2 ? (
+                  <Box sx={{ textAlign: 'center', py: 8 }}>
+                    <LocalCafeIcon sx={{ fontSize: 48, color: 'primary.main', mb: 2 }} />
+                    <Typography color="text.secondary">
+                      Por favor, cadastre pelo menos dois clientes para gerar um contrato
+                    </Typography>
+                  </Box>
+                ) : (
+                  <>
+                    <ContractForm clients={clients} onSubmit={handleContractSubmit} />
+                    {selectedContract && (
+                      <Box sx={{ mt: 4 }}>
+                        <Typography variant="h6" gutterBottom>Visualização do Contrato</Typography>
+                        <ContractPreview
+                          contract={selectedContract}
+                          onConfirm={() => {
+                            handleContractStatusUpdate(selectedContract.id, 'active');
+                            navigate('/management');
+                          }}
+                        />
+                      </Box>
+                    )}
+                    {contracts.length > 0 && !selectedContract && (
+                      <Box sx={{ mt: 4 }}>
+                        <Typography variant="h6" gutterBottom>Contratos Existentes</Typography>
+                        <Box sx={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
+                          {contracts.map((contract) => (
+                            <Card
+                              key={contract.id}
+                              variant="outlined"
+                              sx={{ cursor: 'pointer', '&:hover': { bgcolor: 'action.hover' } }}
+                              onClick={() => setSelectedContract(contract)}
+                            >
+                              <CardContent>
+                                <Typography fontWeight={600}>
                                   Contrato: {contract.seller.name} → {contract.buyer.name}
-                                </h4>
-                                <p className="text-sm text-gray-600">
+                                </Typography>
+                                <Typography variant="body2" color="text.secondary">
                                   {contract.quantity} sacas - Entrega: {new Date(contract.date).toLocaleDateString()}
-                                </p>
-                              </div>
-                            ))}
-                          </div>
-                        </div>
-                      )}
-                    </>
-                  )}
-                </div>
-              }
+                                </Typography>
+                              </CardContent>
+                            </Card>
+                          ))}
+                        </Box>
+                      </Box>
+                    )}
+                  </>
+                )}
+              </CardContent>
+            </Card>
+          }
+        />
+        <Route
+          path="/management"
+          element={
+            <ContractManagement
+              contracts={contracts}
+              onStatusUpdate={handleContractStatusUpdate}
+              onDelete={handleContractDelete}
             />
-            <Route
-              path="/management"
-              element={
-                <ContractManagement
-                  contracts={contracts}
-                  onStatusUpdate={handleContractStatusUpdate}
-                  onDelete={handleContractDelete}
-                />
-              }
-            />
-            <Route
-              path="/logs"
-              element={<SystemLogs />}
-            />
-            <Route
-              path="/dashboard"
-              element={<RiskDashboard />}
-            />
-          </Routes>
-        </div>
-      </Layout>
+          }
+        />
+        <Route path="/logs" element={<SystemLogs />} />
+        <Route path="/dashboard" element={<RiskDashboard />} />
+      </Routes>
+
+      <Snackbar
+        open={snackbar.open}
+        autoHideDuration={4000}
+        onClose={() => setSnackbar(s => ({ ...s, open: false }))}
+        anchorOrigin={{ vertical: 'bottom', horizontal: 'right' }}
+      >
+        <Alert
+          severity={snackbar.severity}
+          variant="filled"
+          onClose={() => setSnackbar(s => ({ ...s, open: false }))}
+        >
+          {snackbar.message}
+        </Alert>
+      </Snackbar>
+    </Layout>
+  );
+}
+
+function App() {
+  return (
+    <BrowserRouter>
+      <AppContent />
     </BrowserRouter>
   );
 }

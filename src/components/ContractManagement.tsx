@@ -1,8 +1,25 @@
-import React, { useState } from 'react';
+import DeleteIcon from '@mui/icons-material/Delete';
+import EditIcon from '@mui/icons-material/Edit';
+import SearchIcon from '@mui/icons-material/Search';
+import VisibilityIcon from '@mui/icons-material/Visibility';
+import Box from '@mui/material/Box';
+import Card from '@mui/material/Card';
+import IconButton from '@mui/material/IconButton';
+import InputAdornment from '@mui/material/InputAdornment';
+import MenuItem from '@mui/material/MenuItem';
+import Table from '@mui/material/Table';
+import TableBody from '@mui/material/TableBody';
+import TableCell from '@mui/material/TableCell';
+import TableContainer from '@mui/material/TableContainer';
+import TableHead from '@mui/material/TableHead';
+import TableRow from '@mui/material/TableRow';
+import TextField from '@mui/material/TextField';
+import Tooltip from '@mui/material/Tooltip';
+import Typography from '@mui/material/Typography';
+import { useState } from 'react';
 import { Contract } from '../types';
-import { Eye, Pencil, Trash2, Search } from 'lucide-react';
-import { DeleteConfirmationModal } from './modals/DeleteConfirmationModal';
 import { ContractModal } from './modals/ContractModal';
+import { DeleteConfirmationModal } from './modals/DeleteConfirmationModal';
 
 interface ContractManagementProps {
   contracts: Contract[];
@@ -48,109 +65,94 @@ export function ContractManagement({ contracts, onStatusUpdate, onDelete }: Cont
   );
 
   return (
-    <div className="space-y-6">
-      <div className="relative">
-        <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
-          <Search className="h-5 w-5 text-gray-400" />
-        </div>
-        <input
-          type="text"
-          placeholder="Pesquisar por vendedor ou comprador..."
-          value={searchTerm}
-          onChange={(e) => setSearchTerm(e.target.value)}
-          className="pl-10 block w-full rounded-md border-gray-300 shadow-sm focus:border-brown-500 focus:ring-brown-500"
-        />
-      </div>
+    <Box>
+      <Typography variant="h5" sx={{ mb: 3 }}>Gestão de Contratos</Typography>
 
-      <div className="bg-white rounded-lg shadow overflow-hidden">
-        <table className="min-w-full divide-y divide-gray-200">
-          <thead className="bg-gray-50">
-            <tr>
-              <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                Vendedor
-              </th>
-              <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                Comprador
-              </th>
-              <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                Quantidade
-              </th>
-              <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                Data de Entrega
-              </th>
-              <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                Status
-              </th>
-              <th className="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">
-                Ações
-              </th>
-            </tr>
-          </thead>
-          <tbody className="bg-white divide-y divide-gray-200">
-            {filteredContracts.length === 0 ? (
-              <tr>
-                <td colSpan={6} className="px-6 py-4 text-center text-gray-500">
-                  Nenhum contrato encontrado
-                </td>
-              </tr>
-            ) : (
-              filteredContracts.map((contract) => (
-                <tr key={contract.id} className="hover:bg-gray-50">
-                  <td className="px-6 py-4 whitespace-nowrap">
-                    <div className="text-sm font-medium text-gray-900">{contract.seller.name}</div>
-                  </td>
-                  <td className="px-6 py-4 whitespace-nowrap">
-                    <div className="text-sm font-medium text-gray-900">{contract.buyer.name}</div>
-                  </td>
-                  <td className="px-6 py-4 whitespace-nowrap">
-                    <div className="text-sm text-gray-500">{contract.quantity} sacas</div>
-                  </td>
-                  <td className="px-6 py-4 whitespace-nowrap">
-                    <div className="text-sm text-gray-500">
-                      {new Date(contract.date).toLocaleDateString()}
-                    </div>
-                  </td>
-                  <td className="px-6 py-4 whitespace-nowrap">
-                    <select
-                      value={contract.status}
-                      onChange={(e) => onStatusUpdate(contract.id, e.target.value as Contract['status'])}
-                      className="text-sm rounded-md border-gray-300 shadow-sm focus:border-brown-500 focus:ring-brown-500"
-                    >
-                      <option value="active">Em Progresso</option>
-                      <option value="completed">Concluído</option>
-                    </select>
-                  </td>
-                  <td className="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
-                    <div className="flex justify-end space-x-3">
-                      <button
-                        onClick={() => handleView(contract)}
-                        className="text-brown-600 hover:text-brown-900"
-                        title="Ver detalhes"
+      <TextField
+        fullWidth
+        placeholder="Pesquisar por vendedor ou comprador..."
+        value={searchTerm}
+        onChange={(e) => setSearchTerm(e.target.value)}
+        sx={{ mb: 2 }}
+        slotProps={{
+          input: {
+            startAdornment: (
+              <InputAdornment position="start"><SearchIcon color="action" /></InputAdornment>
+            ),
+          },
+        }}
+      />
+
+      <Card>
+        <TableContainer>
+          <Table>
+            <TableHead>
+              <TableRow>
+                <TableCell>Vendedor</TableCell>
+                <TableCell>Comprador</TableCell>
+                <TableCell>Quantidade</TableCell>
+                <TableCell>Data de Entrega</TableCell>
+                <TableCell>Status</TableCell>
+                <TableCell align="right">Ações</TableCell>
+              </TableRow>
+            </TableHead>
+            <TableBody>
+              {filteredContracts.length === 0 ? (
+                <TableRow>
+                  <TableCell colSpan={6} align="center">
+                    <Typography color="text.secondary" sx={{ py: 4 }}>Nenhum contrato encontrado</Typography>
+                  </TableCell>
+                </TableRow>
+              ) : (
+                filteredContracts.map((contract) => (
+                  <TableRow key={contract.id} hover>
+                    <TableCell>
+                      <Typography variant="body2" fontWeight={500}>{contract.seller.name}</Typography>
+                    </TableCell>
+                    <TableCell>
+                      <Typography variant="body2" fontWeight={500}>{contract.buyer.name}</Typography>
+                    </TableCell>
+                    <TableCell>
+                      <Typography variant="body2" color="text.secondary">{contract.quantity} sacas</Typography>
+                    </TableCell>
+                    <TableCell>
+                      <Typography variant="body2" color="text.secondary">{new Date(contract.date).toLocaleDateString()}</Typography>
+                    </TableCell>
+                    <TableCell>
+                      <TextField
+                        select size="small" variant="outlined"
+                        value={contract.status}
+                        onChange={(e) => onStatusUpdate(contract.id, e.target.value as Contract['status'])}
+                        sx={{ minWidth: 140 }}
                       >
-                        <Eye className="h-5 w-5" />
-                      </button>
-                      <button
-                        onClick={() => handleEdit(contract)}
-                        className="text-brown-600 hover:text-brown-900"
-                        title="Editar"
-                      >
-                        <Pencil className="h-5 w-5" />
-                      </button>
-                      <button
-                        onClick={() => handleDelete(contract)}
-                        className="text-red-600 hover:text-red-900"
-                        title="Excluir"
-                      >
-                        <Trash2 className="h-5 w-5" />
-                      </button>
-                    </div>
-                  </td>
-                </tr>
-              ))
-            )}
-          </tbody>
-        </table>
-      </div>
+                        <MenuItem value="active">Em Progresso</MenuItem>
+                        <MenuItem value="completed">Concluído</MenuItem>
+                      </TextField>
+                    </TableCell>
+                    <TableCell align="right">
+                      <Tooltip title="Ver detalhes">
+                        <IconButton size="small" onClick={() => handleView(contract)} color="primary">
+                          <VisibilityIcon fontSize="small" />
+                        </IconButton>
+                      </Tooltip>
+                      <Tooltip title="Editar">
+                        <IconButton size="small" onClick={() => handleEdit(contract)} color="primary">
+                          <EditIcon fontSize="small" />
+                        </IconButton>
+                      </Tooltip>
+                      <Tooltip title="Excluir">
+                        <IconButton size="small" onClick={() => handleDelete(contract)} color="error">
+                          <DeleteIcon fontSize="small" />
+                        </IconButton>
+                      </Tooltip>
+                    </TableCell>
+                  </TableRow>
+                ))
+              )}
+            </TableBody>
+          </Table>
+        </TableContainer>
+      </Card>
 
       {selectedContract && (
         <ContractModal
@@ -164,13 +166,10 @@ export function ContractManagement({ contracts, onStatusUpdate, onDelete }: Cont
 
       <DeleteConfirmationModal
         isOpen={deleteModalOpen}
-        onClose={() => {
-          setDeleteModalOpen(false);
-          setContractToDelete(null);
-        }}
+        onClose={() => { setDeleteModalOpen(false); setContractToDelete(null); }}
         onConfirm={confirmDelete}
         clientName={`contrato entre ${contractToDelete?.seller.name} e ${contractToDelete?.buyer.name}`}
       />
-    </div>
+    </Box>
   );
 }

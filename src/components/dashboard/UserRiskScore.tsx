@@ -1,28 +1,29 @@
-import React from 'react';
+import PeopleIcon from '@mui/icons-material/People';
+import TrendingUpIcon from '@mui/icons-material/TrendingUp';
+import Box from '@mui/material/Box';
+import Card from '@mui/material/Card';
+import CardContent from '@mui/material/CardContent';
+import LinearProgress from '@mui/material/LinearProgress';
+import Typography from '@mui/material/Typography';
 import { useMLStore } from '../../store/useMLStore';
-import { Users, TrendingUp } from 'lucide-react';
 
 function RiskGauge({ score, label }: { score: number; label: string }) {
   const percentage = Math.round(score * 100);
-  const color = score >= 0.7 ? 'text-red-600' : score >= 0.4 ? 'text-orange-500' : 'text-green-500';
-  const bgColor = score >= 0.7 ? 'bg-red-500' : score >= 0.4 ? 'bg-orange-400' : 'bg-green-400';
-  const bgTrack = 'bg-gray-200';
+  const color = score >= 0.7 ? 'error' : score >= 0.4 ? 'warning' : 'success';
 
   return (
-    <div className="flex items-center gap-3 py-2">
-      <div className="flex-1 min-w-0">
-        <p className="text-sm font-medium text-gray-900 truncate">{label}</p>
-        <div className="w-full h-2 rounded-full mt-1 overflow-hidden" style={{ backgroundColor: '#e5e7eb' }}>
-          <div
-            className={`h-full rounded-full transition-all duration-500 ${bgColor}`}
-            style={{ width: `${percentage}%` }}
-          />
-        </div>
-      </div>
-      <span className={`text-sm font-bold ${color} w-12 text-right`}>
-        {percentage}%
-      </span>
-    </div>
+    <Box sx={{ py: 0.75 }}>
+      <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 0.5 }}>
+        <Typography variant="body2" noWrap sx={{ maxWidth: '70%' }}>{label}</Typography>
+        <Typography variant="body2" fontWeight={700} color={`${color}.main`}>{percentage}%</Typography>
+      </Box>
+      <LinearProgress
+        variant="determinate"
+        value={percentage}
+        color={color}
+        sx={{ height: 6, borderRadius: 3 }}
+      />
+    </Box>
   );
 }
 
@@ -37,34 +38,36 @@ export function UserRiskScore() {
   const apiUsers = alertsSummary?.userRisks ?? [];
 
   return (
-    <div className="bg-white rounded-lg shadow p-6">
-      <h3 className="text-lg font-semibold flex items-center gap-2 mb-4">
-        <Users className="h-5 w-5 text-blue-500" />
-        Score de Risco por Usuário
-      </h3>
+    <Card sx={{ height: '100%' }}>
+      <CardContent>
+        <Typography variant="h6" sx={{ display: 'flex', alignItems: 'center', gap: 1, mb: 2 }}>
+          <PeopleIcon color="primary" />
+          Score de Risco por Usuário
+        </Typography>
 
-      {sortedUsers.length === 0 && apiUsers.length === 0 ? (
-        <div className="text-center py-8 text-gray-400">
-          <TrendingUp className="h-12 w-12 mx-auto mb-2" />
-          <p>Sem dados de risco disponíveis</p>
-        </div>
-      ) : (
-        <div className="space-y-1">
-          {sortedUsers.length > 0 ? (
-            sortedUsers.map(([userId, score]) => (
-              <RiskGauge key={userId} score={score} label={userId} />
-            ))
-          ) : (
-            apiUsers.map((u: Record<string, unknown>, i: number) => (
-              <RiskGauge
-                key={i}
-                score={(u.avg_risk as number) ?? 0}
-                label={`${u.user_name} (${u.alert_count} alertas)`}
-              />
-            ))
-          )}
-        </div>
-      )}
-    </div>
+        {sortedUsers.length === 0 && apiUsers.length === 0 ? (
+          <Box sx={{ textAlign: 'center', py: 6, color: 'text.disabled' }}>
+            <TrendingUpIcon sx={{ fontSize: 48, mb: 1 }} />
+            <Typography>Sem dados de risco disponíveis</Typography>
+          </Box>
+        ) : (
+          <Box sx={{ display: 'flex', flexDirection: 'column', gap: 0.5 }}>
+            {sortedUsers.length > 0 ? (
+              sortedUsers.map(([userId, score]) => (
+                <RiskGauge key={userId} score={score} label={userId} />
+              ))
+            ) : (
+              apiUsers.map((u: Record<string, unknown>, i: number) => (
+                <RiskGauge
+                  key={i}
+                  score={(u.avg_risk as number) ?? 0}
+                  label={`${u.user_name} (${u.alert_count} alertas)`}
+                />
+              ))
+            )}
+          </Box>
+        )}
+      </CardContent>
+    </Card>
   );
 }

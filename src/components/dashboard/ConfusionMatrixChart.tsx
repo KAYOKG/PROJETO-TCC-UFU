@@ -1,4 +1,11 @@
-import { Grid3X3 } from 'lucide-react';
+import GridOnIcon from '@mui/icons-material/GridOn';
+import Box from '@mui/material/Box';
+import Card from '@mui/material/Card';
+import CardContent from '@mui/material/CardContent';
+import Chip from '@mui/material/Chip';
+import Grid from '@mui/material/Grid';
+import Skeleton from '@mui/material/Skeleton';
+import Typography from '@mui/material/Typography';
 import { useEffect, useState } from 'react';
 import { fetchConfusionMatrix } from '../../services/api';
 
@@ -23,81 +30,70 @@ function MatrixGrid({ cm, total, label }: { cm: CM; total: number; label: string
     { value: cm.tp, pct: cm.tp / total, label: 'TP', good: true },
   ];
 
-  function cellColor(pct: number, good: boolean): string {
+  function cellColor(pct: number, good: boolean) {
     if (good) {
-      if (pct > 0.4) return 'bg-green-600 text-white';
-      if (pct > 0.2) return 'bg-green-400 text-white';
-      if (pct > 0.1) return 'bg-green-200 text-green-900';
-      return 'bg-green-50 text-green-800';
+      if (pct > 0.4) return { bgcolor: 'success.main', color: 'success.contrastText' };
+      if (pct > 0.2) return { bgcolor: 'success.light', color: '#fff' };
+      if (pct > 0.1) return { bgcolor: '#c8e6c9', color: 'success.dark' };
+      return { bgcolor: '#e8f5e9', color: 'success.dark' };
     }
-    if (pct > 0.15) return 'bg-red-500 text-white';
-    if (pct > 0.08) return 'bg-red-300 text-white';
-    if (pct > 0.03) return 'bg-red-100 text-red-900';
-    return 'bg-red-50 text-red-700';
+    if (pct > 0.15) return { bgcolor: 'error.main', color: 'error.contrastText' };
+    if (pct > 0.08) return { bgcolor: 'error.light', color: '#fff' };
+    if (pct > 0.03) return { bgcolor: '#ffcdd2', color: 'error.dark' };
+    return { bgcolor: '#ffebee', color: 'error.dark' };
   }
 
   return (
-    <div>
-      <h4 className="text-sm font-medium text-gray-600 mb-3 text-center">{label}</h4>
-      <div className="flex">
-        {/* Y-axis label */}
-        <div className="flex flex-col justify-center mr-2">
-          <span className="text-[10px] font-semibold text-gray-500 uppercase tracking-widest [writing-mode:vertical-lr] rotate-180 text-center">
-            Real
-          </span>
-        </div>
+    <Box>
+      <Typography variant="subtitle2" align="center" gutterBottom>{label}</Typography>
+      <Box sx={{ display: 'flex' }}>
+        <Box sx={{ display: 'flex', flexDirection: 'column', justifyContent: 'center', mr: 1 }}>
+          <Typography
+            variant="caption"
+            fontWeight={600}
+            color="text.secondary"
+            sx={{ writingMode: 'vertical-lr', transform: 'rotate(180deg)', textAlign: 'center', letterSpacing: 1 }}
+          >
+            REAL
+          </Typography>
+        </Box>
 
-        <div className="flex-1">
-          {/* Column headers */}
-          <div className="grid grid-cols-[80px_1fr_1fr] gap-1 mb-1">
-            <div />
-            <div className="text-center text-[11px] font-semibold text-gray-500">Normal</div>
-            <div className="text-center text-[11px] font-semibold text-gray-500">Suspeito</div>
-          </div>
+        <Box sx={{ flex: 1 }}>
+          <Box sx={{ display: 'grid', gridTemplateColumns: '70px 1fr 1fr', gap: 0.5, mb: 0.5 }}>
+            <Box />
+            <Typography variant="caption" fontWeight={600} color="text.secondary" align="center">Normal</Typography>
+            <Typography variant="caption" fontWeight={600} color="text.secondary" align="center">Suspeito</Typography>
+          </Box>
 
-          {/* Row 1: Real Normal */}
-          <div className="grid grid-cols-[80px_1fr_1fr] gap-1 mb-1">
-            <div className="flex items-center justify-end pr-2">
-              <span className="text-[11px] font-semibold text-gray-500">Normal</span>
-            </div>
-            {cells.slice(0, 2).map((cell) => (
-              <div
-                key={cell.label}
-                className={`rounded-lg p-3 text-center transition-colors ${cellColor(cell.pct, cell.good)}`}
-              >
-                <div className="text-xl font-bold">{cell.value}</div>
-                <div className="text-[10px] opacity-80">{(cell.pct * 100).toFixed(1)}%</div>
-                <div className="text-[9px] opacity-60 mt-0.5">{cell.label}</div>
-              </div>
-            ))}
-          </div>
+          {[0, 1].map(row => (
+            <Box key={row} sx={{ display: 'grid', gridTemplateColumns: '70px 1fr 1fr', gap: 0.5, mb: 0.5 }}>
+              <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'flex-end', pr: 1 }}>
+                <Typography variant="caption" fontWeight={600} color="text.secondary">
+                  {row === 0 ? 'Normal' : 'Suspeito'}
+                </Typography>
+              </Box>
+              {cells.slice(row * 2, row * 2 + 2).map((cell) => {
+                const colors = cellColor(cell.pct, cell.good);
+                return (
+                  <Box
+                    key={cell.label}
+                    sx={{ ...colors, borderRadius: 2, p: 1.5, textAlign: 'center', transition: 'all 0.2s' }}
+                  >
+                    <Typography variant="h5" fontWeight={700}>{cell.value}</Typography>
+                    <Typography variant="caption" sx={{ opacity: 0.8 }}>{(cell.pct * 100).toFixed(1)}%</Typography>
+                    <Typography variant="caption" display="block" sx={{ opacity: 0.6, mt: 0.5 }}>{cell.label}</Typography>
+                  </Box>
+                );
+              })}
+            </Box>
+          ))}
 
-          {/* Row 2: Real Suspeito */}
-          <div className="grid grid-cols-[80px_1fr_1fr] gap-1">
-            <div className="flex items-center justify-end pr-2">
-              <span className="text-[11px] font-semibold text-gray-500">Suspeito</span>
-            </div>
-            {cells.slice(2, 4).map((cell) => (
-              <div
-                key={cell.label}
-                className={`rounded-lg p-3 text-center transition-colors ${cellColor(cell.pct, cell.good)}`}
-              >
-                <div className="text-xl font-bold">{cell.value}</div>
-                <div className="text-[10px] opacity-80">{(cell.pct * 100).toFixed(1)}%</div>
-                <div className="text-[9px] opacity-60 mt-0.5">{cell.label}</div>
-              </div>
-            ))}
-          </div>
-
-          {/* X-axis label */}
-          <div className="text-center mt-2">
-            <span className="text-[10px] font-semibold text-gray-500 uppercase tracking-widest">
-              Previsto
-            </span>
-          </div>
-        </div>
-      </div>
-    </div>
+          <Typography variant="caption" fontWeight={600} color="text.secondary" align="center" display="block" sx={{ mt: 1, letterSpacing: 1 }}>
+            PREVISTO
+          </Typography>
+        </Box>
+      </Box>
+    </Box>
   );
 }
 
@@ -114,23 +110,31 @@ export function ConfusionMatrixChart() {
 
   if (loading) {
     return (
-      <div className="bg-white rounded-lg shadow p-6">
-        <p className="text-gray-400 text-center py-8">Carregando matriz de confusão...</p>
-      </div>
+      <Card>
+        <CardContent>
+          <Skeleton variant="text" width={250} height={32} />
+          <Grid container spacing={4} sx={{ mt: 1 }}>
+            <Grid size={{ xs: 12, lg: 6 }}><Skeleton variant="rounded" height={200} /></Grid>
+            <Grid size={{ xs: 12, lg: 6 }}><Skeleton variant="rounded" height={200} /></Grid>
+          </Grid>
+        </CardContent>
+      </Card>
     );
   }
 
   if (!data?.ml || !data?.rules) {
     return (
-      <div className="bg-white rounded-lg shadow p-6">
-        <h3 className="text-lg font-semibold flex items-center gap-2 mb-4">
-          <Grid3X3 className="h-5 w-5 text-rose-500" />
-          Matriz de Confusão
-        </h3>
-        <p className="text-gray-400 text-center py-8">
-          Execute o treinamento do modelo para ver a matriz de confusão
-        </p>
-      </div>
+      <Card>
+        <CardContent>
+          <Typography variant="h6" sx={{ display: 'flex', alignItems: 'center', gap: 1, mb: 2 }}>
+            <GridOnIcon color="error" />
+            Matriz de Confusão
+          </Typography>
+          <Typography color="text.secondary" sx={{ textAlign: 'center', py: 4 }}>
+            Execute o treinamento do modelo para ver a matriz de confusão
+          </Typography>
+        </CardContent>
+      </Card>
     );
   }
 
@@ -138,38 +142,32 @@ export function ConfusionMatrixChart() {
   const rulesTotal = data.rules.tp + data.rules.fp + data.rules.tn + data.rules.fn;
 
   return (
-    <div className="bg-white rounded-lg shadow p-6">
-      <h3 className="text-lg font-semibold flex items-center gap-2 mb-2">
-        <Grid3X3 className="h-5 w-5 text-rose-500" />
-        Matriz de Confusão
-      </h3>
-      <p className="text-xs text-gray-500 mb-4">
-        Conjunto de teste: {data.testSize} amostras | Verde = classificação correta | Vermelho = erro
-      </p>
+    <Card>
+      <CardContent>
+        <Typography variant="h6" sx={{ display: 'flex', alignItems: 'center', gap: 1, mb: 0.5 }}>
+          <GridOnIcon color="error" />
+          Matriz de Confusão
+        </Typography>
+        <Typography variant="caption" color="text.secondary" sx={{ mb: 3, display: 'block' }}>
+          Conjunto de teste: {data.testSize} amostras | Verde = classificação correta | Vermelho = erro
+        </Typography>
 
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
-        <MatrixGrid cm={data.ml} total={mlTotal} label="Modelo ML (TensorFlow.js)" />
-        <MatrixGrid cm={data.rules} total={rulesTotal} label="Baseline de Regras Estáticas" />
-      </div>
+        <Grid container spacing={4}>
+          <Grid size={{ xs: 12, lg: 6 }}>
+            <MatrixGrid cm={data.ml} total={mlTotal} label="Modelo ML (TensorFlow.js)" />
+          </Grid>
+          <Grid size={{ xs: 12, lg: 6 }}>
+            <MatrixGrid cm={data.rules} total={rulesTotal} label="Baseline de Regras Estáticas" />
+          </Grid>
+        </Grid>
 
-      <div className="mt-4 grid grid-cols-2 lg:grid-cols-4 gap-3 text-xs">
-        <div className="bg-gray-50 rounded p-2 text-center">
-          <span className="font-semibold text-gray-700">TN</span>
-          <span className="text-gray-500"> = Verdadeiro Negativo</span>
-        </div>
-        <div className="bg-gray-50 rounded p-2 text-center">
-          <span className="font-semibold text-gray-700">TP</span>
-          <span className="text-gray-500"> = Verdadeiro Positivo</span>
-        </div>
-        <div className="bg-gray-50 rounded p-2 text-center">
-          <span className="font-semibold text-gray-700">FP</span>
-          <span className="text-gray-500"> = Falso Positivo</span>
-        </div>
-        <div className="bg-gray-50 rounded p-2 text-center">
-          <span className="font-semibold text-gray-700">FN</span>
-          <span className="text-gray-500"> = Falso Negativo</span>
-        </div>
-      </div>
-    </div>
+        <Box sx={{ display: 'flex', gap: 1, flexWrap: 'wrap', mt: 3, justifyContent: 'center' }}>
+          <Chip label="TN = Verdadeiro Negativo" size="small" variant="outlined" />
+          <Chip label="TP = Verdadeiro Positivo" size="small" variant="outlined" />
+          <Chip label="FP = Falso Positivo" size="small" variant="outlined" />
+          <Chip label="FN = Falso Negativo" size="small" variant="outlined" />
+        </Box>
+      </CardContent>
+    </Card>
   );
 }

@@ -1,13 +1,17 @@
-import { Activity, AlertTriangle, CheckCircle } from 'lucide-react';
+import CheckCircleIcon from '@mui/icons-material/CheckCircle';
+import ErrorIcon from '@mui/icons-material/Error';
+import ShowChartIcon from '@mui/icons-material/ShowChart';
+import WarningAmberIcon from '@mui/icons-material/WarningAmber';
+import Alert from '@mui/material/Alert';
+import Box from '@mui/material/Box';
+import Card from '@mui/material/Card';
+import CardContent from '@mui/material/CardContent';
+import Grid from '@mui/material/Grid';
+import Skeleton from '@mui/material/Skeleton';
+import Typography from '@mui/material/Typography';
 import { useEffect, useState } from 'react';
 import {
-  CartesianGrid,
-  Legend,
-  Line,
-  LineChart,
-  ResponsiveContainer,
-  Tooltip,
-  XAxis, YAxis,
+  CartesianGrid, Legend, Line, LineChart, ResponsiveContainer, Tooltip, XAxis, YAxis,
 } from 'recharts';
 import { fetchLearningCurve } from '../../services/api';
 
@@ -68,23 +72,31 @@ export function LearningCurveChart() {
 
   if (loading) {
     return (
-      <div className="bg-white rounded-lg shadow p-6">
-        <p className="text-gray-400 text-center py-8">Carregando curva de aprendizado...</p>
-      </div>
+      <Card>
+        <CardContent>
+          <Skeleton variant="text" width={300} height={32} />
+          <Grid container spacing={2} sx={{ mt: 1 }}>
+            <Grid size={{ xs: 12, lg: 6 }}><Skeleton variant="rounded" height={260} /></Grid>
+            <Grid size={{ xs: 12, lg: 6 }}><Skeleton variant="rounded" height={260} /></Grid>
+          </Grid>
+        </CardContent>
+      </Card>
     );
   }
 
   if (!data || !data.epochs?.length) {
     return (
-      <div className="bg-white rounded-lg shadow p-6">
-        <h3 className="text-lg font-semibold flex items-center gap-2 mb-4">
-          <Activity className="h-5 w-5 text-teal-500" />
-          Curva de Aprendizado (Learning Curve)
-        </h3>
-        <p className="text-gray-400 text-center py-8">
-          Execute o treinamento do modelo para ver a curva de aprendizado
-        </p>
-      </div>
+      <Card>
+        <CardContent>
+          <Typography variant="h6" sx={{ display: 'flex', alignItems: 'center', gap: 1, mb: 2 }}>
+            <ShowChartIcon color="info" />
+            Curva de Aprendizado (Learning Curve)
+          </Typography>
+          <Typography color="text.secondary" sx={{ textAlign: 'center', py: 4 }}>
+            Execute o treinamento do modelo para ver a curva de aprendizado
+          </Typography>
+        </CardContent>
+      </Card>
     );
   }
 
@@ -98,63 +110,56 @@ export function LearningCurveChart() {
     valAcc: Number(((data.valAcc[i] ?? 0) * 100).toFixed(2)),
   }));
 
-  const statusConfig = {
-    healthy: { color: 'bg-green-50 border-green-200 text-green-800', Icon: CheckCircle, iconColor: 'text-green-600' },
-    mild: { color: 'bg-yellow-50 border-yellow-200 text-yellow-800', Icon: AlertTriangle, iconColor: 'text-yellow-600' },
-    severe: { color: 'bg-red-50 border-red-200 text-red-800', Icon: AlertTriangle, iconColor: 'text-red-600' },
-  };
-  const { color, Icon, iconColor } = statusConfig[diagnosis.status];
+  const severityMap = { healthy: 'success', mild: 'warning', severe: 'error' } as const;
+  const iconMap = { healthy: <CheckCircleIcon />, mild: <WarningAmberIcon />, severe: <ErrorIcon /> };
+  const labelMap = { healthy: 'Saudável', mild: 'Leve Overfitting', severe: 'Overfitting Severo' };
 
   return (
-    <div className="bg-white rounded-lg shadow p-6">
-      <h3 className="text-lg font-semibold flex items-center gap-2 mb-4">
-        <Activity className="h-5 w-5 text-teal-500" />
-        Curva de Aprendizado &mdash; Análise de Overfitting
-      </h3>
+    <Card>
+      <CardContent>
+        <Typography variant="h6" sx={{ display: 'flex', alignItems: 'center', gap: 1, mb: 2 }}>
+          <ShowChartIcon color="info" />
+          Curva de Aprendizado &mdash; Análise de Overfitting
+        </Typography>
 
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-4">
-        <div>
-          <h4 className="text-sm font-medium text-gray-600 mb-2">Loss por Época</h4>
-          <ResponsiveContainer width="100%" height={260}>
-            <LineChart data={chartData}>
-              <CartesianGrid strokeDasharray="3 3" />
-              <XAxis dataKey="epoch" fontSize={11} label={{ value: 'Época', position: 'insideBottom', offset: -2, fontSize: 11 }} />
-              <YAxis fontSize={11} label={{ value: 'Loss', angle: -90, position: 'insideLeft', fontSize: 11 }} />
-              <Tooltip />
-              <Legend />
-              <Line type="monotone" dataKey="trainLoss" name="Treino" stroke="#7c3aed" strokeWidth={2} dot={false} />
-              <Line type="monotone" dataKey="valLoss" name="Validação" stroke="#ef4444" strokeWidth={2} dot={false} strokeDasharray="5 5" />
-            </LineChart>
-          </ResponsiveContainer>
-        </div>
+        <Grid container spacing={3} sx={{ mb: 2 }}>
+          <Grid size={{ xs: 12, lg: 6 }}>
+            <Typography variant="subtitle2" color="text.secondary" gutterBottom>Loss por Época</Typography>
+            <ResponsiveContainer width="100%" height={260}>
+              <LineChart data={chartData}>
+                <CartesianGrid strokeDasharray="3 3" />
+                <XAxis dataKey="epoch" fontSize={11} label={{ value: 'Época', position: 'insideBottom', offset: -2, fontSize: 11 }} />
+                <YAxis fontSize={11} label={{ value: 'Loss', angle: -90, position: 'insideLeft', fontSize: 11 }} />
+                <Tooltip />
+                <Legend />
+                <Line type="monotone" dataKey="trainLoss" name="Treino" stroke="#1565c0" strokeWidth={2} dot={false} />
+                <Line type="monotone" dataKey="valLoss" name="Validação" stroke="#d32f2f" strokeWidth={2} dot={false} strokeDasharray="5 5" />
+              </LineChart>
+            </ResponsiveContainer>
+          </Grid>
+          <Grid size={{ xs: 12, lg: 6 }}>
+            <Typography variant="subtitle2" color="text.secondary" gutterBottom>Acurácia por Época</Typography>
+            <ResponsiveContainer width="100%" height={260}>
+              <LineChart data={chartData}>
+                <CartesianGrid strokeDasharray="3 3" />
+                <XAxis dataKey="epoch" fontSize={11} label={{ value: 'Época', position: 'insideBottom', offset: -2, fontSize: 11 }} />
+                <YAxis fontSize={11} domain={[0, 100]} tickFormatter={(v) => `${v}%`} label={{ value: 'Acurácia', angle: -90, position: 'insideLeft', fontSize: 11 }} />
+                <Tooltip formatter={(v: number) => `${v.toFixed(1)}%`} />
+                <Legend />
+                <Line type="monotone" dataKey="trainAcc" name="Treino" stroke="#1565c0" strokeWidth={2} dot={false} />
+                <Line type="monotone" dataKey="valAcc" name="Validação" stroke="#d32f2f" strokeWidth={2} dot={false} strokeDasharray="5 5" />
+              </LineChart>
+            </ResponsiveContainer>
+          </Grid>
+        </Grid>
 
-        <div>
-          <h4 className="text-sm font-medium text-gray-600 mb-2">Acurácia por Época</h4>
-          <ResponsiveContainer width="100%" height={260}>
-            <LineChart data={chartData}>
-              <CartesianGrid strokeDasharray="3 3" />
-              <XAxis dataKey="epoch" fontSize={11} label={{ value: 'Época', position: 'insideBottom', offset: -2, fontSize: 11 }} />
-              <YAxis fontSize={11} domain={[0, 100]} tickFormatter={(v) => `${v}%`} label={{ value: 'Acurácia', angle: -90, position: 'insideLeft', fontSize: 11 }} />
-              <Tooltip formatter={(v: number) => `${v.toFixed(1)}%`} />
-              <Legend />
-              <Line type="monotone" dataKey="trainAcc" name="Treino" stroke="#7c3aed" strokeWidth={2} dot={false} />
-              <Line type="monotone" dataKey="valAcc" name="Validação" stroke="#ef4444" strokeWidth={2} dot={false} strokeDasharray="5 5" />
-            </LineChart>
-          </ResponsiveContainer>
-        </div>
-      </div>
-
-      <div className={`rounded-lg border p-4 ${color}`}>
-        <div className="flex items-start gap-2">
-          <Icon className={`h-5 w-5 mt-0.5 ${iconColor}`} />
-          <div>
-            <h4 className="font-semibold text-sm mb-1">
-              Diagnóstico: {diagnosis.status === 'healthy' ? 'Saudável' : diagnosis.status === 'mild' ? 'Leve Overfitting' : 'Overfitting Severo'}
-            </h4>
-            <p className="text-sm">{diagnosis.message}</p>
-          </div>
-        </div>
-      </div>
-    </div>
+        <Alert severity={severityMap[diagnosis.status]} icon={iconMap[diagnosis.status]}>
+          <Typography variant="subtitle2" gutterBottom>
+            Diagnóstico: {labelMap[diagnosis.status]}
+          </Typography>
+          <Typography variant="body2">{diagnosis.message}</Typography>
+        </Alert>
+      </CardContent>
+    </Card>
   );
 }

@@ -1,8 +1,12 @@
-import React, { useMemo } from 'react';
-import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from 'recharts';
+import LayersIcon from '@mui/icons-material/Layers';
+import Box from '@mui/material/Box';
+import Card from '@mui/material/Card';
+import CardContent from '@mui/material/CardContent';
+import Typography from '@mui/material/Typography';
+import { useMemo } from 'react';
+import { Bar, BarChart, CartesianGrid, ResponsiveContainer, Tooltip, XAxis, YAxis } from 'recharts';
 import { useMLStore } from '../../store/useMLStore';
 import { FEATURE_NAMES } from '../../types';
-import { Layers } from 'lucide-react';
 
 const FEATURE_LABELS: Record<string, string> = {
   hourOfDay: 'Hora do Dia',
@@ -67,28 +71,30 @@ export function FeatureImportance() {
   }, [predictions]);
 
   return (
-    <div className="bg-white rounded-lg shadow p-6">
-      <h3 className="text-lg font-semibold flex items-center gap-2 mb-4">
-        <Layers className="h-5 w-5 text-emerald-500" />
-        Importância das Features
-      </h3>
+    <Card>
+      <CardContent>
+        <Typography variant="h6" sx={{ display: 'flex', alignItems: 'center', gap: 1, mb: 2 }}>
+          <LayersIcon color="success" />
+          Importância das Features
+        </Typography>
 
-      {importanceData.length === 0 ? (
-        <div className="text-center py-12 text-gray-400">
-          <Layers className="h-12 w-12 mx-auto mb-2" />
-          <p>Necessário ter predições normais e suspeitas</p>
-        </div>
-      ) : (
-        <ResponsiveContainer width="100%" height={400}>
-          <BarChart data={importanceData} layout="vertical" margin={{ left: 120 }}>
-            <CartesianGrid strokeDasharray="3 3" />
-            <XAxis type="number" domain={[0, 'auto']} fontSize={11} />
-            <YAxis dataKey="feature" type="category" fontSize={11} width={120} />
-            <Tooltip formatter={(value: number) => value.toFixed(4)} />
-            <Bar dataKey="importance" name="Importância" fill="#10b981" radius={[0, 4, 4, 0]} />
-          </BarChart>
-        </ResponsiveContainer>
-      )}
-    </div>
+        {importanceData.length === 0 ? (
+          <Box sx={{ textAlign: 'center', py: 8, color: 'text.disabled' }}>
+            <LayersIcon sx={{ fontSize: 48, mb: 1 }} />
+            <Typography>Necessário ter predições normais e suspeitas</Typography>
+          </Box>
+        ) : (
+          <ResponsiveContainer width="100%" height={400}>
+            <BarChart data={importanceData} layout="vertical" margin={{ left: 120 }}>
+              <CartesianGrid strokeDasharray="3 3" />
+              <XAxis type="number" domain={[0, 'auto']} fontSize={11} />
+              <YAxis dataKey="feature" type="category" fontSize={11} width={120} />
+              <Tooltip formatter={(value: number) => value.toFixed(4)} />
+              <Bar dataKey="importance" name="Importância" fill="#2e7d32" radius={[0, 4, 4, 0]} />
+            </BarChart>
+          </ResponsiveContainer>
+        )}
+      </CardContent>
+    </Card>
   );
 }

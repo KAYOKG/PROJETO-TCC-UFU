@@ -1,71 +1,60 @@
-import React from 'react';
+import Grid from '@mui/material/Grid';
+import TextField from '@mui/material/TextField';
 
-export function AddressFields() {
+interface AddressFieldsProps {
+  prefix?: string;
+  defaults?: Record<string, string>;
+  disabled?: boolean;
+  onChange?: (e: React.ChangeEvent<HTMLInputElement>) => void;
+}
+
+export function AddressFields({ prefix = '', defaults = {}, disabled = false, onChange }: AddressFieldsProps) {
+  const name = (field: string) => prefix ? `${prefix}.${field}` : field;
+
   return (
-    <div className="grid grid-cols-2 gap-4">
-      <div className="col-span-2">
-        <label className="block text-sm font-medium text-gray-700">Rua</label>
-        <input
-          type="text"
-          name="street"
-          required
-          className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-brown-500 focus:ring-brown-500"
+    <Grid container spacing={2}>
+      <Grid size={{ xs: 12 }}>
+        <TextField
+          fullWidth label="Rua" name={name('street')} required
+          defaultValue={defaults.street} disabled={disabled} onChange={onChange}
         />
-      </div>
-      <div>
-        <label className="block text-sm font-medium text-gray-700">Número</label>
-        <input
-          type="text"
-          name="number"
-          required
-          className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-brown-500 focus:ring-brown-500"
+      </Grid>
+      <Grid size={{ xs: 6 }}>
+        <TextField
+          fullWidth label="Número" name={name('number')} required
+          defaultValue={defaults.number} disabled={disabled} onChange={onChange}
         />
-      </div>
-      <div>
-        <label className="block text-sm font-medium text-gray-700">Complemento</label>
-        <input
-          type="text"
-          name="complement"
-          className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-brown-500 focus:ring-brown-500"
+      </Grid>
+      <Grid size={{ xs: 6 }}>
+        <TextField
+          fullWidth label="Complemento" name={name('complement')}
+          defaultValue={defaults.complement} disabled={disabled} onChange={onChange}
         />
-      </div>
-      <div>
-        <label className="block text-sm font-medium text-gray-700">Cidade</label>
-        <input
-          type="text"
-          name="city"
-          required
-          className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-brown-500 focus:ring-brown-500"
+      </Grid>
+      <Grid size={{ xs: 6 }}>
+        <TextField
+          fullWidth label="Cidade" name={name('city')} required
+          defaultValue={defaults.city} disabled={disabled} onChange={onChange}
         />
-      </div>
-      <div>
-        <label className="block text-sm font-medium text-gray-700">Estado</label>
-        <input
-          type="text"
-          name="state"
-          required
-          className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-brown-500 focus:ring-brown-500"
+      </Grid>
+      <Grid size={{ xs: 6 }}>
+        <TextField
+          fullWidth label="Estado" name={name('state')} required
+          defaultValue={defaults.state} disabled={disabled} onChange={onChange}
         />
-      </div>
-      <div>
-        <label className="block text-sm font-medium text-gray-700">País</label>
-        <input
-          type="text"
-          name="country"
-          required
-          defaultValue="Brasil"
-          className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-brown-500 focus:ring-brown-500"
+      </Grid>
+      <Grid size={{ xs: 6 }}>
+        <TextField
+          fullWidth label="País" name={name('country')} required
+          defaultValue={defaults.country || 'Brasil'} disabled={disabled} onChange={onChange}
         />
-      </div>
-      <div>
-        <label className="block text-sm font-medium text-gray-700">CEP</label>
-        <input
-          type="text"
-          name="zipCode"
-          required
-          className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-brown-500 focus:ring-brown-500"
+      </Grid>
+      <Grid size={{ xs: 6 }}>
+        <TextField
+          fullWidth label="CEP" name={name('zipCode')} required
+          defaultValue={defaults.zipCode} disabled={disabled} onChange={onChange}
         />
-      </div>
-    </div>
+      </Grid>
+    </Grid>
   );
 }

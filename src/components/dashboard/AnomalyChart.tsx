@@ -1,10 +1,18 @@
-import React, { useMemo } from 'react';
+import TimelineIcon from '@mui/icons-material/Timeline';
+import Box from '@mui/material/Box';
+import Card from '@mui/material/Card';
+import CardContent from '@mui/material/CardContent';
+import Typography from '@mui/material/Typography';
+import { useMemo } from 'react';
 import {
-  LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer,
-  AreaChart, Area,
+  Area,
+  AreaChart,
+  CartesianGrid,
+  Legend, ResponsiveContainer,
+  Tooltip,
+  XAxis, YAxis,
 } from 'recharts';
 import { useMLStore } from '../../store/useMLStore';
-import { BarChart3 } from 'lucide-react';
 
 export function AnomalyChart() {
   const predictions = useMLStore(state => state.predictions);
@@ -16,11 +24,9 @@ export function AnomalyChart() {
 
     for (const pred of predictions) {
       const time = new Date(pred.timestamp);
-      const key = `${time.getHours().toString().padStart(2, '0')}:${Math.floor(time.getMinutes() / 5) * 5 === 0 ? '00' : (Math.floor(time.getMinutes() / 5) * 5).toString().padStart(2, '0')}`;
+      const key = `${time.getHours().toString().padStart(2, '0')}:${(Math.floor(time.getMinutes() / 5) * 5).toString().padStart(2, '0')}`;
 
-      if (!grouped.has(key)) {
-        grouped.set(key, { scores: [], count: 0 });
-      }
+      if (!grouped.has(key)) grouped.set(key, { scores: [], count: 0 });
       const g = grouped.get(key)!;
       g.scores.push(pred.riskScore);
       g.count++;
@@ -37,48 +43,35 @@ export function AnomalyChart() {
   }, [predictions]);
 
   return (
-    <div className="bg-white rounded-lg shadow p-6">
-      <h3 className="text-lg font-semibold flex items-center gap-2 mb-4">
-        <BarChart3 className="h-5 w-5 text-indigo-500" />
-        Score de Risco ao Longo do Tempo
-      </h3>
+    <Card>
+      <CardContent>
+        <Typography variant="h6" sx={{ display: 'flex', alignItems: 'center', gap: 1, mb: 2 }}>
+          <TimelineIcon color="primary" />
+          Score de Risco ao Longo do Tempo
+        </Typography>
 
-      {chartData.length === 0 ? (
-        <div className="text-center py-12 text-gray-400">
-          <BarChart3 className="h-12 w-12 mx-auto mb-2" />
-          <p>Dados aparecerão conforme ações forem realizadas</p>
-        </div>
-      ) : (
-        <ResponsiveContainer width="100%" height={300}>
-          <AreaChart data={chartData}>
-            <CartesianGrid strokeDasharray="3 3" />
-            <XAxis dataKey="time" fontSize={12} />
-            <YAxis domain={[0, 1]} fontSize={12} tickFormatter={(v) => `${(v * 100).toFixed(0)}%`} />
-            <Tooltip
-              formatter={(value: number) => `${(value * 100).toFixed(1)}%`}
-              labelFormatter={(label) => `Horário: ${label}`}
-            />
-            <Legend />
-            <Area
-              type="monotone"
-              dataKey="avgScore"
-              name="Score Médio"
-              stroke="#6366f1"
-              fill="#c7d2fe"
-              strokeWidth={2}
-            />
-            <Area
-              type="monotone"
-              dataKey="maxScore"
-              name="Score Máximo"
-              stroke="#ef4444"
-              fill="#fecaca"
-              strokeWidth={1}
-              strokeDasharray="5 5"
-            />
-          </AreaChart>
-        </ResponsiveContainer>
-      )}
-    </div>
+        {chartData.length === 0 ? (
+          <Box sx={{ textAlign: 'center', py: 8, color: 'text.disabled' }}>
+            <TimelineIcon sx={{ fontSize: 48, mb: 1 }} />
+            <Typography>Dados aparecerão conforme ações forem realizadas</Typography>
+          </Box>
+        ) : (
+          <ResponsiveContainer width="100%" height={300}>
+            <AreaChart data={chartData}>
+              <CartesianGrid strokeDasharray="3 3" />
+              <XAxis dataKey="time" fontSize={12} />
+              <YAxis domain={[0, 1]} fontSize={12} tickFormatter={(v) => `${(v * 100).toFixed(0)}%`} />
+              <Tooltip
+                formatter={(value: number) => `${(value * 100).toFixed(1)}%`}
+                labelFormatter={(label) => `Horário: ${label}`}
+              />
+              <Legend />
+              <Area type="monotone" dataKey="avgScore" name="Score Médio" stroke="#1565c0" fill="#bbdefb" strokeWidth={2} />
+              <Area type="monotone" dataKey="maxScore" name="Score Máximo" stroke="#d32f2f" fill="#ffcdd2" strokeWidth={1} strokeDasharray="5 5" />
+            </AreaChart>
+          </ResponsiveContainer>
+        )}
+      </CardContent>
+    </Card>
   );
 }

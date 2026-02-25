@@ -1,4 +1,13 @@
-import React, { useState } from 'react';
+import DescriptionIcon from '@mui/icons-material/Description';
+import Box from '@mui/material/Box';
+import Button from '@mui/material/Button';
+import Card from '@mui/material/Card';
+import CardContent from '@mui/material/CardContent';
+import Grid from '@mui/material/Grid';
+import MenuItem from '@mui/material/MenuItem';
+import TextField from '@mui/material/TextField';
+import Typography from '@mui/material/Typography';
+import { useState } from 'react';
 import { Client, Contract } from '../../types';
 import { AddressFields } from '../shared/AddressFields';
 
@@ -14,10 +23,10 @@ export function ContractForm({ clients, onSubmit }: ContractFormProps) {
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     const formData = new FormData(e.target as HTMLFormElement);
-    
+
     const seller = clients.find(c => c.id === selectedSeller);
     const buyer = clients.find(c => c.id === selectedBuyer);
-    
+
     if (!seller || !buyer) return;
 
     const contract = {
@@ -41,94 +50,70 @@ export function ContractForm({ clients, onSubmit }: ContractFormProps) {
   };
 
   return (
-    <form onSubmit={handleSubmit} className="space-y-6">
-      <div className="bg-white p-6 rounded-lg shadow">
-        <h3 className="text-lg font-medium mb-4">Partes do Contrato</h3>
-        <div className="grid grid-cols-2 gap-4">
-          <div>
-            <label className="block text-sm font-medium text-gray-700">Vendedor</label>
-            <select
-              value={selectedSeller}
-              onChange={(e) => setSelectedSeller(e.target.value)}
-              required
-              className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-brown-500 focus:ring-brown-500"
-            >
-              <option value="">Selecione um vendedor</option>
-              {clients.map((client) => (
-                <option key={client.id} value={client.id}>
-                  {client.name}
-                </option>
-              ))}
-            </select>
-          </div>
-          <div>
-            <label className="block text-sm font-medium text-gray-700">Comprador</label>
-            <select
-              value={selectedBuyer}
-              onChange={(e) => setSelectedBuyer(e.target.value)}
-              required
-              className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-brown-500 focus:ring-brown-500"
-            >
-              <option value="">Selecione um comprador</option>
-              {clients.map((client) => (
-                <option key={client.id} value={client.id}>
-                  {client.name}
-                </option>
-              ))}
-            </select>
-          </div>
-        </div>
-      </div>
+    <form onSubmit={handleSubmit}>
+      <Box sx={{ display: 'flex', flexDirection: 'column', gap: 3 }}>
+        <Card variant="outlined">
+          <CardContent>
+            <Typography variant="subtitle1" gutterBottom>Partes do Contrato</Typography>
+            <Grid container spacing={2}>
+              <Grid size={{ xs: 12, md: 6 }}>
+                <TextField
+                  fullWidth select label="Vendedor" required
+                  value={selectedSeller}
+                  onChange={(e) => setSelectedSeller(e.target.value)}
+                >
+                  <MenuItem value="" disabled>Selecione um vendedor</MenuItem>
+                  {clients.map((client) => (
+                    <MenuItem key={client.id} value={client.id}>{client.name}</MenuItem>
+                  ))}
+                </TextField>
+              </Grid>
+              <Grid size={{ xs: 12, md: 6 }}>
+                <TextField
+                  fullWidth select label="Comprador" required
+                  value={selectedBuyer}
+                  onChange={(e) => setSelectedBuyer(e.target.value)}
+                >
+                  <MenuItem value="" disabled>Selecione um comprador</MenuItem>
+                  {clients.map((client) => (
+                    <MenuItem key={client.id} value={client.id}>{client.name}</MenuItem>
+                  ))}
+                </TextField>
+              </Grid>
+            </Grid>
+          </CardContent>
+        </Card>
 
-      <div className="bg-white p-6 rounded-lg shadow">
-        <h3 className="text-lg font-medium mb-4">Detalhes do Contrato</h3>
-        <div className="grid grid-cols-2 gap-4">
-          <div>
-            <label className="block text-sm font-medium text-gray-700">Quantidade (sacas)</label>
-            <input
-              type="number"
-              name="quantity"
-              required
-              min="1"
-              className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-brown-500 focus:ring-brown-500"
-            />
-          </div>
-          <div>
-            <label className="block text-sm font-medium text-gray-700">Preço por saca</label>
-            <input
-              type="number"
-              name="price"
-              required
-              min="0"
-              step="0.01"
-              className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-brown-500 focus:ring-brown-500"
-            />
-          </div>
-          <div>
-            <label className="block text-sm font-medium text-gray-700">Data de Entrega</label>
-            <input
-              type="date"
-              name="date"
-              required
-              className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-brown-500 focus:ring-brown-500"
-            />
-          </div>
-        </div>
-      </div>
+        <Card variant="outlined">
+          <CardContent>
+            <Typography variant="subtitle1" gutterBottom>Detalhes do Contrato</Typography>
+            <Grid container spacing={2}>
+              <Grid size={{ xs: 12, md: 4 }}>
+                <TextField fullWidth label="Quantidade (sacas)" name="quantity" type="number" required slotProps={{ htmlInput: { min: 1 } }} />
+              </Grid>
+              <Grid size={{ xs: 12, md: 4 }}>
+                <TextField fullWidth label="Preço por saca" name="price" type="number" required slotProps={{ htmlInput: { min: 0, step: 0.01 } }} />
+              </Grid>
+              <Grid size={{ xs: 12, md: 4 }}>
+                <TextField fullWidth label="Data de Entrega" name="date" type="date" required slotProps={{ inputLabel: { shrink: true } }} />
+              </Grid>
+            </Grid>
+          </CardContent>
+        </Card>
 
-      <div className="bg-white p-6 rounded-lg shadow">
-        <h3 className="text-lg font-medium mb-4">Endereço de Entrega</h3>
-        <AddressFields />
-      </div>
+        <Card variant="outlined">
+          <CardContent>
+            <Typography variant="subtitle1" gutterBottom>Endereço de Entrega</Typography>
+            <AddressFields />
+          </CardContent>
+        </Card>
 
-      <div className="flex justify-end">
-        <button
-          type="submit"
-          className="bg-brown-600 text-white px-4 py-2 rounded-md hover:bg-brown-700 focus:outline-none focus:ring-2 focus:ring-brown-500 focus:ring-offset-2"
-        >
-          Gerar Contrato
-        </button>
-      </div>
+        <Box sx={{ display: 'flex', justifyContent: 'flex-end' }}>
+          <Button type="submit" variant="contained" startIcon={<DescriptionIcon />}>
+            Gerar Contrato
+          </Button>
+        </Box>
+      </Box>
     </form>
   );
 }

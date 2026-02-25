@@ -1,92 +1,92 @@
-import React from 'react';
+import AccessTimeIcon from '@mui/icons-material/AccessTime';
+import PsychologyIcon from '@mui/icons-material/Psychology';
+import ShieldIcon from '@mui/icons-material/Shield';
+import WarningAmberIcon from '@mui/icons-material/WarningAmber';
+import Badge from '@mui/material/Badge';
+import Box from '@mui/material/Box';
+import Card from '@mui/material/Card';
+import CardContent from '@mui/material/CardContent';
+import Chip from '@mui/material/Chip';
+import Typography from '@mui/material/Typography';
 import { useMLStore } from '../../store/useMLStore';
-import { AlertTriangle, Shield, Brain, Clock } from 'lucide-react';
 
 export function AlertsPanel() {
   const alerts = useMLStore(state => state.alerts);
 
-  const formatTime = (dateStr: string) => {
-    return new Intl.DateTimeFormat('pt-BR', {
-      hour: '2-digit',
-      minute: '2-digit',
-      second: '2-digit',
-    }).format(new Date(dateStr));
-  };
+  const formatTime = (dateStr: string) =>
+    new Intl.DateTimeFormat('pt-BR', { hour: '2-digit', minute: '2-digit', second: '2-digit' }).format(new Date(dateStr));
 
   return (
-    <div className="bg-white rounded-lg shadow p-6">
-      <div className="flex items-center justify-between mb-4">
-        <h3 className="text-lg font-semibold flex items-center gap-2">
-          <AlertTriangle className="h-5 w-5 text-red-500" />
-          Alertas em Tempo Real
-        </h3>
-        <span className="bg-red-100 text-red-800 text-xs font-medium px-2.5 py-0.5 rounded-full">
-          {alerts.length} alertas
-        </span>
-      </div>
+    <Card sx={{ height: '100%' }}>
+      <CardContent>
+        <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', mb: 2 }}>
+          <Typography variant="h6" sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+            <WarningAmberIcon color="error" />
+            Alertas em Tempo Real
+          </Typography>
+          <Badge badgeContent={alerts.length} color="error" max={99}>
+            <Chip label="alertas" size="small" variant="outlined" />
+          </Badge>
+        </Box>
 
-      <div className="space-y-3 max-h-96 overflow-y-auto">
-        {alerts.length === 0 ? (
-          <div className="text-center py-8 text-gray-400">
-            <Shield className="h-12 w-12 mx-auto mb-2" />
-            <p>Nenhum alerta detectado</p>
-          </div>
-        ) : (
-          alerts.map(alert => (
-            <div
-              key={alert.id}
-              className={`border rounded-lg p-3 ${
-                alert.isMlDetection
-                  ? 'border-red-200 bg-red-50'
-                  : 'border-yellow-200 bg-yellow-50'
-              }`}
-            >
-              <div className="flex items-start justify-between">
-                <div className="flex items-center gap-2">
-                  {alert.isMlDetection ? (
-                    <Brain className="h-4 w-4 text-red-600 flex-shrink-0" />
-                  ) : (
-                    <Shield className="h-4 w-4 text-yellow-600 flex-shrink-0" />
-                  )}
-                  <div>
-                    <p className="text-sm font-medium text-gray-900">
-                      {alert.alertType}
-                    </p>
-                    <p className="text-xs text-gray-600 mt-0.5">
-                      {alert.description}
-                    </p>
-                  </div>
-                </div>
-                <div className="text-right flex-shrink-0 ml-2">
-                  <span className={`text-xs font-bold px-2 py-0.5 rounded ${
-                    alert.riskScore >= 0.8
-                      ? 'bg-red-200 text-red-900'
-                      : alert.riskScore >= 0.5
-                      ? 'bg-orange-200 text-orange-900'
-                      : 'bg-yellow-200 text-yellow-900'
-                  }`}>
-                    {(alert.riskScore * 100).toFixed(0)}%
-                  </span>
-                </div>
-              </div>
-              <div className="flex items-center gap-3 mt-2 text-xs text-gray-500">
-                <span>{alert.userName} ({alert.userId})</span>
-                <span className="flex items-center gap-1">
-                  <Clock className="h-3 w-3" />
-                  {formatTime(alert.createdAt)}
-                </span>
-                <span className={`px-1.5 py-0.5 rounded text-xs ${
-                  alert.isMlDetection
-                    ? 'bg-purple-100 text-purple-700'
-                    : 'bg-gray-100 text-gray-700'
-                }`}>
-                  {alert.isMlDetection ? 'ML' : 'Regra'}
-                </span>
-              </div>
-            </div>
-          ))
-        )}
-      </div>
-    </div>
+        <Box sx={{ maxHeight: 380, overflow: 'auto', display: 'flex', flexDirection: 'column', gap: 1.5 }}>
+          {alerts.length === 0 ? (
+            <Box sx={{ textAlign: 'center', py: 6, color: 'text.disabled' }}>
+              <ShieldIcon sx={{ fontSize: 48, mb: 1 }} />
+              <Typography>Nenhum alerta detectado</Typography>
+            </Box>
+          ) : (
+            alerts.map(alert => (
+              <Card
+                key={alert.id}
+                variant="outlined"
+                sx={{
+                  bgcolor: alert.isMlDetection ? 'error.50' : 'warning.50',
+                  borderColor: alert.isMlDetection ? 'error.200' : 'warning.200',
+                }}
+              >
+                <CardContent sx={{ py: 1.5, px: 2, '&:last-child': { pb: 1.5 } }}>
+                  <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', gap: 1 }}>
+                    <Box sx={{ display: 'flex', gap: 1, alignItems: 'flex-start', flex: 1 }}>
+                      {alert.isMlDetection
+                        ? <PsychologyIcon fontSize="small" color="error" sx={{ mt: 0.3 }} />
+                        : <ShieldIcon fontSize="small" color="warning" sx={{ mt: 0.3 }} />
+                      }
+                      <Box>
+                        <Typography variant="body2" fontWeight={600}>{alert.alertType}</Typography>
+                        <Typography variant="caption" color="text.secondary">{alert.description}</Typography>
+                      </Box>
+                    </Box>
+                    <Chip
+                      label={`${(alert.riskScore * 100).toFixed(0)}%`}
+                      size="small"
+                      color={alert.riskScore >= 0.8 ? 'error' : alert.riskScore >= 0.5 ? 'warning' : 'default'}
+                      variant="filled"
+                    />
+                  </Box>
+
+                  <Box sx={{ display: 'flex', alignItems: 'center', gap: 2, mt: 1 }}>
+                    <Typography variant="caption" color="text.secondary">
+                      {alert.userName} ({alert.userId})
+                    </Typography>
+                    <Typography variant="caption" color="text.secondary" sx={{ display: 'flex', alignItems: 'center', gap: 0.5 }}>
+                      <AccessTimeIcon sx={{ fontSize: 12 }} />
+                      {formatTime(alert.createdAt)}
+                    </Typography>
+                    <Chip
+                      label={alert.isMlDetection ? 'ML' : 'Regra'}
+                      size="small"
+                      variant="outlined"
+                      color={alert.isMlDetection ? 'secondary' : 'default'}
+                      sx={{ height: 20, '& .MuiChip-label': { px: 1, fontSize: '0.65rem' } }}
+                    />
+                  </Box>
+                </CardContent>
+              </Card>
+            ))
+          )}
+        </Box>
+      </CardContent>
+    </Card>
   );
 }
