@@ -1,6 +1,7 @@
 import CheckCircleIcon from '@mui/icons-material/CheckCircle';
 import CloseIcon from '@mui/icons-material/Close';
 import ErrorIcon from '@mui/icons-material/Error';
+import ExpandLessIcon from '@mui/icons-material/ExpandLess';
 import ExpandMoreIcon from '@mui/icons-material/ExpandMore';
 import Box from '@mui/material/Box';
 import Card from '@mui/material/Card';
@@ -10,6 +11,7 @@ import Collapse from '@mui/material/Collapse';
 import Grid from '@mui/material/Grid';
 import IconButton from '@mui/material/IconButton';
 import Paper from '@mui/material/Paper';
+import Tooltip from '@mui/material/Tooltip';
 import Typography from '@mui/material/Typography';
 import {
   DataGrid,
@@ -31,6 +33,37 @@ const ACCESS_LEVEL_COLORS: Record<string, 'error' | 'primary' | 'default' | 'sec
   system: 'secondary',
 };
 
+const MAX_CELL_CHARS = 60;
+
+function truncate(str: string | undefined, max = MAX_CELL_CHARS) {
+  if (!str) return '—';
+  if (str.length <= max) return str;
+  return `${str.slice(0, max)}…`;
+}
+
+function formatIpDisplay(origin: SystemLog['origin']) {
+  const v4 = origin?.ipv4Address || origin?.ipAddress;
+  const v6 = origin?.ipv6Address;
+  const parts: string[] = [];
+  if (v4) parts.push(`IPv4: ${v4}`);
+  if (v6) parts.push(`IPv6: ${v6}`);
+  return parts.length ? parts.join(' | ') : 'N/A';
+}
+
+function formatLocationDisplay(origin: SystemLog['origin']) {
+  const g = origin?.geolocation;
+  if (!g) return null;
+  const parts: string[] = [];
+  if (g.city) parts.push(g.city);
+  if (g.state) parts.push(g.state);
+  if (g.country) parts.push(g.country);
+  if (parts.length) return parts.join(', ');
+  if (g.latitude != null && g.longitude != null) {
+    return `${g.latitude.toFixed(4)}°, ${g.longitude.toFixed(4)}°`;
+  }
+  return null;
+}
+
 function formatDate(date: Date | string) {
   const d = date instanceof Date ? date : new Date(date);
   return new Intl.DateTimeFormat('pt-BR', {
@@ -50,124 +83,184 @@ function formatDuration(start: Date | string, end: Date | string) {
 
 function CustomToolbar() {
   return (
-    <GridToolbarContainer sx={{ p: 1.5, gap: 1 }}>
+    <GridToolbarContainer sx={{ p: 1.5, gap: 1, flexWrap: 'wrap' }}>
       <GridToolbarColumnsButton />
       <GridToolbarFilterButton />
       <GridToolbarExport />
-      <Box sx={{ flexGrow: 1 }} />
-      <GridToolbarQuickFilter sx={{ minWidth: 250 }} />
+      <Box sx={{ flexGrow: 1, minWidth: 120 }} />
+      <GridToolbarQuickFilter
+        sx={{ minWidth: 220 }}
+        placeholder="Buscar em todos os campos…"
+      />
     </GridToolbarContainer>
   );
 }
 
-const columns: GridColDef[] = [
-  {
-    field: 'expand',
-    headerName: '',
-    width: 50,
-    sortable: false,
-    filterable: false,
-    disableColumnMenu: true,
-    renderCell: () => <ExpandMoreIcon fontSize="small" color="action" />,
-  },
-  {
-    field: 'timestamp',
-    headerName: 'Data/Hora',
-    width: 170,
-    type: 'dateTime',
-    valueGetter: (value: Date | string) => (value instanceof Date ? value : new Date(value)),
-    valueFormatter: (value: Date) => formatDate(value),
-  },
-  {
-    field: 'userName',
-    headerName: 'Usuário',
-    width: 150,
-    renderCell: (params) => (
-      <Box>
-        <Typography variant="body2" fontWeight={500}>{params.row.userName}</Typography>
-        <Typography variant="caption" color="text.secondary">{params.row.userId}</Typography>
-      </Box>
-    ),
-  },
-  {
-    field: 'accessLevel',
-    headerName: 'Nível de Acesso',
-    width: 140,
-    renderCell: (params) => (
-      <Chip
-        label={params.value}
-        size="small"
-        color={ACCESS_LEVEL_COLORS[params.value as string] || 'default'}
-        variant="filled"
-      />
-    ),
-  },
-  {
-    field: 'action',
-    headerName: 'Ação',
-    width: 200,
-  },
-  {
-    field: 'details',
-    headerName: 'Detalhes',
-    flex: 1,
-    minWidth: 200,
-  },
-  {
-    field: 'module',
-    headerName: 'Módulo',
-    width: 140,
-    valueGetter: (_value: unknown, row: SystemLog) => row.origin?.module || 'N/A',
-  },
-  {
-    field: 'deviceBrowser',
-    headerName: 'Dispositivo',
-    width: 140,
-    valueGetter: (_value: unknown, row: SystemLog) => row.origin?.device || 'N/A',
-  },
-  {
-    field: 'ipLocation',
-    headerName: 'IP/Localização',
-    width: 160,
-    valueGetter: (_value: unknown, row: SystemLog) => {
-      const ip = row.origin?.ipAddress || '';
-      const city = row.origin?.geolocation?.city || '';
-      return city ? `${ip} (${city})` : ip || 'N/A';
+function getColumns(selectedLogId: string | null): GridColDef[] {
+  return [
+    {
+      field: 'expand',
+      headerName: '',
+      width: 48,
+      sortable: false,
+      filterable: false,
+      disableColumnMenu: true,
+      renderCell: (params) => {
+        const isExpanded = selectedLogId === params.row.id;
+        return (
+          <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+            {isExpanded ? (
+              <ExpandLessIcon fontSize="small" color="primary" />
+            ) : (
+              <ExpandMoreIcon fontSize="small" color="action" />
+            )}
+          </Box>
+        );
+      },
     },
-  },
-  {
-    field: 'network',
-    headerName: 'Rede',
-    width: 130,
-    valueGetter: (_value: unknown, row: SystemLog) => row.origin?.network?.type || 'N/A',
-  },
-  {
-    field: 'sessionInfo',
-    headerName: 'Sessão',
-    width: 140,
-    valueGetter: (_value: unknown, row: SystemLog) => {
-      if (!row.session) return 'N/A';
-      return formatDuration(row.session.startTime, row.timestamp);
+    {
+      field: 'timestamp',
+      headerName: 'Data/Hora',
+      width: 155,
+      type: 'dateTime',
+      valueGetter: (value: Date | string) => (value instanceof Date ? value : new Date(value)),
+      valueFormatter: (value: Date) => formatDate(value),
     },
-  },
-  {
-    field: 'result',
-    headerName: 'Resultado',
-    width: 120,
-    renderCell: (params) => {
-      const ok = params.value === 'success';
-      return (
+    {
+      field: 'userName',
+      headerName: 'Usuário',
+      width: 160,
+      renderCell: (params) => (
+        <Tooltip title={`${params.row.userName} (${params.row.userId})`}>
+          <Box sx={{ minWidth: 0, display: 'flex', flexDirection: 'column', gap: 0.25 }}>
+            <Typography variant="body2" fontWeight={600} noWrap sx={{ lineHeight: 1.2 }}>
+              {params.row.userName}
+            </Typography>
+            <Typography variant="caption" color="text.secondary" noWrap sx={{ lineHeight: 1.2, fontSize: '0.7rem' }}>
+              ID: {params.row.userId}
+            </Typography>
+          </Box>
+        </Tooltip>
+      ),
+    },
+    {
+      field: 'accessLevel',
+      headerName: 'Nível',
+      width: 95,
+      renderCell: (params) => (
         <Chip
-          icon={ok ? <CheckCircleIcon /> : <ErrorIcon />}
-          label={ok ? 'Sucesso' : 'Erro'}
+          label={params.value}
           size="small"
-          color={ok ? 'success' : 'error'}
+          color={ACCESS_LEVEL_COLORS[params.value as string] || 'default'}
           variant="filled"
         />
-      );
+      ),
     },
-  },
-];
+    {
+      field: 'action',
+      headerName: 'Ação',
+      width: 180,
+      renderCell: (params) => (
+        <Tooltip title={params.value || ''}>
+          <Typography variant="body2" noWrap sx={{ maxWidth: '100%' }}>
+            {truncate(params.value, 35)}
+          </Typography>
+        </Tooltip>
+      ),
+    },
+    {
+      field: 'details',
+      headerName: 'Detalhes',
+      flex: 1,
+      minWidth: 180,
+      renderCell: (params) => (
+        <Tooltip title={params.value || ''}>
+          <Typography variant="body2" noWrap sx={{ maxWidth: '100%' }}>
+            {truncate(params.value, 50)}
+          </Typography>
+        </Tooltip>
+      ),
+    },
+    {
+      field: 'module',
+      headerName: 'Módulo',
+      width: 120,
+      valueGetter: (_value: unknown, row: SystemLog) => row.origin?.module || 'N/A',
+      renderCell: (params) => (
+        <Typography variant="body2" noWrap title={params.value as string}>
+          {truncate(params.value as string, 18)}
+        </Typography>
+      ),
+    },
+    {
+      field: 'deviceBrowser',
+      headerName: 'Dispositivo',
+      width: 120,
+      valueGetter: (_value: unknown, row: SystemLog) => row.origin?.device || 'N/A',
+      renderCell: (params) => (
+        <Typography variant="body2" noWrap title={params.value as string}>
+          {truncate(params.value as string, 18)}
+        </Typography>
+      ),
+    },
+    {
+      field: 'ipLocation',
+      headerName: 'IP / Localização',
+      width: 220,
+      valueGetter: (_value: unknown, row: SystemLog) => {
+        const ipStr = formatIpDisplay(row.origin);
+        const locStr = formatLocationDisplay(row.origin);
+        return locStr ? `${ipStr} — ${locStr}` : ipStr;
+      },
+      renderCell: (params) => (
+        <Tooltip title={params.value as string}>
+          <Box sx={{ minWidth: 0, display: 'flex', flexDirection: 'column', gap: 0.25 }}>
+            <Typography variant="caption" sx={{ fontSize: '0.7rem', lineHeight: 1.2 }} noWrap>
+              {formatIpDisplay(params.row.origin)}
+            </Typography>
+            {formatLocationDisplay(params.row.origin) && (
+              <Typography variant="caption" color="text.secondary" noWrap sx={{ fontSize: '0.65rem', lineHeight: 1.2 }}>
+                {formatLocationDisplay(params.row.origin)}
+              </Typography>
+            )}
+          </Box>
+        </Tooltip>
+      ),
+    },
+    {
+      field: 'network',
+      headerName: 'Rede',
+      width: 100,
+      valueGetter: (_value: unknown, row: SystemLog) => row.origin?.network?.type || 'N/A',
+    },
+    {
+      field: 'sessionInfo',
+      headerName: 'Sessão',
+      width: 90,
+      valueGetter: (_value: unknown, row: SystemLog) => {
+        if (!row.session) return 'N/A';
+        return formatDuration(row.session.startTime, row.timestamp);
+      },
+    },
+    {
+      field: 'result',
+      headerName: 'Resultado',
+      width: 110,
+      renderCell: (params) => {
+        const ok = params.value === 'success';
+        return (
+          <Chip
+            icon={ok ? <CheckCircleIcon /> : <ErrorIcon />}
+            label={ok ? 'Sucesso' : 'Erro'}
+            size="small"
+            color={ok ? 'success' : 'error'}
+            variant="filled"
+          />
+        );
+      },
+    },
+  ];
+}
 
 function LogDetailPanel({ log, onClose }: { log: SystemLog; onClose: () => void }) {
   const Section = ({ title, children }: { title: string; children: React.ReactNode }) => (
@@ -209,7 +302,15 @@ function LogDetailPanel({ log, onClose }: { log: SystemLog; onClose: () => void 
               <Info label="Nome" value={log.userName} />
               <Info label="ID" value={log.userId} />
               <Info label="Nível de Acesso" value={log.accessLevel} />
-              <Info label="IP" value={log.origin?.ipAddress} />
+              {(log.origin?.ipv4Address || log.origin?.ipAddress) && (
+                <Info label="IPv4" value={log.origin.ipv4Address || log.origin.ipAddress} />
+              )}
+              {log.origin?.ipv6Address && (
+                <Info label="IPv6" value={log.origin.ipv6Address} />
+              )}
+              {!log.origin?.ipv4Address && !log.origin?.ipv6Address && !log.origin?.ipAddress && (
+                <Info label="IP" value="Não disponível" />
+              )}
               {log.session && (
                 <>
                   <Info label="Duração da Sessão" value={formatDuration(log.session.startTime, log.timestamp)} />
@@ -231,22 +332,50 @@ function LogDetailPanel({ log, onClose }: { log: SystemLog; onClose: () => void 
                 <>
                   <Info label="Tipo de Rede" value={log.origin.network.type} />
                   <Info label="Velocidade" value={log.origin.network.speed} />
-                  {log.origin.network.latency > 0 && (
+                  {(log.origin.network.latency ?? 0) > 0 && (
                     <Info label="Latência" value={`${log.origin.network.latency}ms`} />
                   )}
                 </>
               )}
-              {log.origin?.geolocation && (
-                <>
-                  <Info label="Latitude" value={log.origin.geolocation.latitude.toFixed(6)} />
-                  <Info label="Longitude" value={log.origin.geolocation.longitude.toFixed(6)} />
-                  <Info label="Cidade" value={log.origin.geolocation.city} />
-                  <Info label="Estado" value={log.origin.geolocation.state} />
-                  <Info label="País" value={log.origin.geolocation.country} />
-                </>
-              )}
             </Section>
           </Grid>
+
+          {log.origin?.geolocation && (
+            <Grid size={{ xs: 12 }}>
+              <Section title="Localização Detalhada">
+                <Grid container spacing={2}>
+                  <Grid size={{ xs: 12, sm: 6, md: 3 }}>
+                    <Info label="Cidade" value={log.origin.geolocation.city} />
+                  </Grid>
+                  <Grid size={{ xs: 12, sm: 6, md: 3 }}>
+                    <Info label="Estado" value={log.origin.geolocation.state} />
+                  </Grid>
+                  <Grid size={{ xs: 12, sm: 6, md: 3 }}>
+                    <Info label="País" value={log.origin.geolocation.country} />
+                  </Grid>
+                  <Grid size={{ xs: 12, sm: 6, md: 3 }}>
+                    <Info
+                      label="Coordenadas"
+                      value={
+                        log.origin.geolocation.latitude != null && log.origin.geolocation.longitude != null
+                          ? `${log.origin.geolocation.latitude.toFixed(6)}°, ${log.origin.geolocation.longitude.toFixed(6)}°`
+                          : undefined
+                      }
+                    />
+                  </Grid>
+                </Grid>
+                <Typography variant="caption" color="text.secondary" sx={{ display: 'block', mt: 1 }}>
+                  Endereço completo: {[
+                    log.origin.geolocation.city,
+                    log.origin.geolocation.state,
+                    log.origin.geolocation.country,
+                  ]
+                    .filter(Boolean)
+                    .join(', ')}
+                </Typography>
+              </Section>
+            </Grid>
+          )}
 
           {log.elementInfo && (
             <Grid size={{ xs: 12 }}>
@@ -272,12 +401,14 @@ export function SystemLogs() {
     [logs, selectedLogId],
   );
 
-  return (
-    <Box>
-      <Typography variant="h5" sx={{ mb: 3 }}>Logs do Sistema</Typography>
+  const columns = useMemo(() => getColumns(selectedLogId), [selectedLogId]);
 
-      <Card>
-        <Box sx={{ width: '100%' }}>
+  return (
+    <Box sx={{ display: 'flex', flexDirection: 'column', height: '100%', overflow: 'hidden' }}>
+      <Typography variant="h5" sx={{ py: 2, px: 2, flexShrink: 0 }}>Logs do Sistema</Typography>
+
+      <Card sx={{ flex: 1, overflow: 'hidden', display: 'flex', flexDirection: 'column', m: 0, borderRadius: 0, boxShadow: 'none', borderTop: '1px solid', borderColor: 'divider' }}>
+        <Box sx={{ flex: 1, minHeight: 0, width: '100%', '& .MuiDataGrid-root': { height: '100% !important' } }}>
           <DataGrid
             rows={logs}
             columns={columns}
@@ -285,6 +416,12 @@ export function SystemLogs() {
             initialState={{
               pagination: { paginationModel: { pageSize: 25 } },
               sorting: { sortModel: [{ field: 'timestamp', sort: 'desc' }] },
+              columns: {
+                columnVisibilityModel: {
+                  network: false,
+                  sessionInfo: false,
+                },
+              },
             }}
             pageSizeOptions={[10, 25, 50, 100]}
             slots={{ toolbar: CustomToolbar }}
@@ -294,15 +431,37 @@ export function SystemLogs() {
             onRowClick={(params) => {
               setSelectedLogId(prev => prev === params.id ? null : String(params.id));
             }}
-            getRowHeight={() => 52}
+            getRowHeight={() => 56}
+            getRowClassName={(params) =>
+              params.id === selectedLogId ? 'row-expanded' : ''
+            }
             sx={{
               border: 'none',
               '& .MuiDataGrid-row': { cursor: 'pointer' },
               '& .MuiDataGrid-row:hover': { bgcolor: 'action.hover' },
-              '& .MuiDataGrid-cell': { display: 'flex', alignItems: 'center' },
+              '& .MuiDataGrid-row.row-expanded': {
+                bgcolor: 'primary.light',
+                borderLeft: '4px solid',
+                borderColor: 'primary.main',
+              },
+              '& .MuiDataGrid-row.row-expanded:hover': {
+                bgcolor: 'primary.light',
+              },
+              '& .MuiDataGrid-cell': {
+                display: 'flex',
+                alignItems: 'center',
+                overflow: 'hidden',
+              },
+              '& .MuiDataGrid-columnHeaders': {
+                bgcolor: 'grey.50',
+                borderBottom: '2px solid',
+                borderColor: 'divider',
+              },
+              '& .MuiDataGrid-row:nth-of-type(even):not(.row-expanded)': {
+                bgcolor: 'grey.50',
+              },
             }}
             disableRowSelectionOnClick
-            autoHeight
             localeText={{
               toolbarColumns: 'Colunas',
               toolbarFilters: 'Filtros',
@@ -319,9 +478,11 @@ export function SystemLogs() {
         </Box>
       </Card>
 
-      <Collapse in={!!selectedLog}>
+      <Collapse in={!!selectedLog} sx={{ flexShrink: 0 }}>
         {selectedLog && (
-          <LogDetailPanel log={selectedLog} onClose={() => setSelectedLogId(null)} />
+          <Box sx={{ p: 2 }}>
+            <LogDetailPanel log={selectedLog} onClose={() => setSelectedLogId(null)} />
+          </Box>
         )}
       </Collapse>
     </Box>

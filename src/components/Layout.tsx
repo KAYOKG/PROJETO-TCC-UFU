@@ -144,9 +144,26 @@ export function Layout({ children }: LayoutProps) {
         {drawerContent}
       </Drawer>
 
-      <Box component="main" sx={{ flexGrow: 1, width: { md: `calc(100% - ${DRAWER_WIDTH}px)` }, bgcolor: 'background.default' }}>
+      <Box
+        component="main"
+        sx={{
+          flexGrow: 1,
+          width: { md: `calc(100% - ${DRAWER_WIDTH}px)` },
+          ml: { md: `${DRAWER_WIDTH}px` },
+          bgcolor: 'background.default',
+        }}
+      >
         <Toolbar />
-        <Box sx={{ p: { xs: 2, md: 3 }, maxWidth: 1400, mx: 'auto' }}>
+        <Box
+          sx={{
+            p: location.pathname === '/logs' ? 0 : { xs: 2, md: 3 },
+            maxWidth: location.pathname === '/logs' ? 'none' : 1400,
+            mx: location.pathname === '/logs' ? 0 : 'auto',
+            height: location.pathname === '/logs' ? 'calc(100vh - 64px)' : 'auto',
+            display: 'flex',
+            flexDirection: 'column',
+          }}
+        >
           {children}
         </Box>
       </Box>

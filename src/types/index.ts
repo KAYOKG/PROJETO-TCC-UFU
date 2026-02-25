@@ -12,7 +12,7 @@ export interface BankInfo {
   bankName: string;
   accountNumber: string;
   branch: string;
-  accountType: 'checking' | 'savings';
+  accountType: "checking" | "savings";
 }
 
 export interface Client {
@@ -39,7 +39,7 @@ export interface Contract {
   quantity: number;
   price: number;
   date: string;
-  status: 'pending' | 'active' | 'completed' | 'cancelled';
+  status: "pending" | "active" | "completed" | "cancelled";
 }
 
 export interface UserSession {
@@ -49,6 +49,8 @@ export interface UserSession {
   loginAttempts: number;
   lastActivity: Date;
   ipAddress?: string;
+  ipv4Address?: string;
+  ipv6Address?: string;
   inactivityTime?: number;
   geolocation?: {
     latitude: number;
@@ -64,7 +66,7 @@ export interface SystemLog {
   timestamp: Date;
   userName: string;
   userId: string;
-  accessLevel: 'admin' | 'user' | 'guest' | 'system';
+  accessLevel: "admin" | "user" | "guest" | "system";
   action: string;
   details: string;
   origin: {
@@ -72,6 +74,8 @@ export interface SystemLog {
     device: string;
     browser: string;
     ipAddress?: string;
+    ipv4Address?: string;
+    ipv6Address?: string;
     geolocation?: {
       latitude: number;
       longitude: number;
@@ -86,8 +90,8 @@ export interface SystemLog {
     };
   };
   session: UserSession;
-  result: 'success' | 'error';
-  interactionType?: 'click' | 'navigation' | 'configuration' | 'system';
+  result: "success" | "error";
+  interactionType?: "click" | "navigation" | "configuration" | "system";
   elementInfo?: {
     id?: string;
     className?: string;
@@ -132,16 +136,36 @@ export interface FeatureVector {
 }
 
 export const FEATURE_NAMES: (keyof FeatureVector)[] = [
-  'hourOfDay', 'dayOfWeek', 'accessLevelEncoded',
-  'actionTypeCreate', 'actionTypeRead', 'actionTypeUpdate',
-  'actionTypeDelete', 'actionTypeLogin', 'actionTypeConfig',
-  'moduleClientes', 'moduleEmpresa', 'moduleContratos',
-  'moduleGestao', 'moduleSistema', 'resultEncoded',
-  'sessionDurationMinutes', 'actionFrequency', 'actionVariety',
-  'actionSequenceEntropy', 'moduleAccessCount', 'sensitiveDataAccessCount',
-  'errorRate', 'avgTimeBetweenActions', 'burstScore',
-  'networkLatency', 'geoDistanceFromUsual', 'ipChangeFlag',
-  'loginAttempts', 'inactivitySeconds', 'isNewDevice',
+  "hourOfDay",
+  "dayOfWeek",
+  "accessLevelEncoded",
+  "actionTypeCreate",
+  "actionTypeRead",
+  "actionTypeUpdate",
+  "actionTypeDelete",
+  "actionTypeLogin",
+  "actionTypeConfig",
+  "moduleClientes",
+  "moduleEmpresa",
+  "moduleContratos",
+  "moduleGestao",
+  "moduleSistema",
+  "resultEncoded",
+  "sessionDurationMinutes",
+  "actionFrequency",
+  "actionVariety",
+  "actionSequenceEntropy",
+  "moduleAccessCount",
+  "sensitiveDataAccessCount",
+  "errorRate",
+  "avgTimeBetweenActions",
+  "burstScore",
+  "networkLatency",
+  "geoDistanceFromUsual",
+  "ipChangeFlag",
+  "loginAttempts",
+  "inactivitySeconds",
+  "isNewDevice",
 ];
 
 export const NUM_FEATURES = FEATURE_NAMES.length;

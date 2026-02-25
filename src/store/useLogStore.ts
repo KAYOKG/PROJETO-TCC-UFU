@@ -14,6 +14,7 @@ interface LogState {
   ) => void;
   updateGeolocation: (coords: { latitude: number; longitude: number }) => void;
   updateIpAddress: (ip: string) => void;
+  updateIpAddresses: (ips: { ipv4?: string; ipv6?: string }) => void;
 }
 
 const INACTIVITY_THRESHOLD = 5 * 60 * 1000;
@@ -109,6 +110,16 @@ export const useLogStore = create<LogState>((set, get) => {
         },
       }));
     },
+    updateIpAddresses: ({ ipv4, ipv6 }) => {
+      set((state) => ({
+        currentSession: {
+          ...state.currentSession,
+          ipAddress: ipv4 ?? ipv6 ?? state.currentSession.ipAddress,
+          ipv4Address: ipv4,
+          ipv6Address: ipv6,
+        },
+      }));
+    },
     addLog: (logData) => {
       const networkInfo = getCurrentNetworkInfo();
       const state = get();
@@ -127,6 +138,8 @@ export const useLogStore = create<LogState>((set, get) => {
           network: networkInfo,
           geolocation: state.currentSession.geolocation,
           ipAddress: state.currentSession.ipAddress,
+          ipv4Address: state.currentSession.ipv4Address,
+          ipv6Address: state.currentSession.ipv6Address,
         },
       };
 

@@ -1,7 +1,7 @@
+import { publicIpv4, publicIpv6 } from 'public-ip';
 import React, { useEffect } from 'react';
 import { useGeolocated } from 'react-geolocated';
 import { useLogStore } from '../store/useLogStore';
-import { publicIp } from 'public-ip';
 
 export const GeolocationProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   const { coords, isGeolocationAvailable, isGeolocationEnabled } = useGeolocated({
@@ -13,7 +13,7 @@ export const GeolocationProvider: React.FC<{ children: React.ReactNode }> = ({ c
   });
 
   const updateGeolocation = useLogStore(state => state.updateGeolocation);
-  const updateIpAddress = useLogStore(state => state.updateIpAddress);
+  const updateIpAddresses = useLogStore(state => state.updateIpAddresses);
 
   useEffect(() => {
     if (coords) {
@@ -25,18 +25,23 @@ export const GeolocationProvider: React.FC<{ children: React.ReactNode }> = ({ c
   }, [coords, updateGeolocation]);
 
   useEffect(() => {
-    const fetchIp = async () => {
+    const fetchIps = async () => {
       try {
-        const ip = await publicIp();
-        updateIpAddress(ip);
+        const [ipv4, ipv6] = await Promise.allSettled([
+          publicIpv4({ timeout: 5000 }),
+          publicIpv6({ timeout: 5000 }),
+        ]);
+        const v4 = ipv4.status === 'fulfilled' ? ipv4.value : undefined;
+        const v6 = ipv6.status === 'fulfilled' ? ipv6.value : undefined;
+        updateIpAddresses({ ipv4: v4, ipv6: v6 });
       } catch (error) {
-        console.warn('Failed to fetch IP address:', error);
-        updateIpAddress('Não disponível');
+        console.warn('Failed to fetch IP addresses:', error);
+        updateIpAddresses({});
       }
     };
 
-    fetchIp();
-  }, [updateIpAddress]);
+    fetchIps();
+  }, [updateIpAddresses]);
 
   if (!isGeolocationAvailable) {
     console.warn('Geolocation is not supported by your browser');
