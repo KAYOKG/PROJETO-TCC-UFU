@@ -20,7 +20,7 @@ import {
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 
-interface DatasetSample {
+export interface DatasetSample {
   features: number[];
   label: number;
 }
@@ -171,16 +171,33 @@ async function saveModel(model: tf.Sequential, outputDir: string) {
   console.log(`Model saved to ${outputDir}`);
 }
 
-async function main() {
-  console.log("=== RAA TensorFlow.js Trainer ===\n");
-  const startTime = Date.now();
+const EPOCHS = 50;
+const BATCH_SIZE = 64;
 
+export interface RunTrainingResult {
+  mlMetrics: ReturnType<typeof import("./evaluator.js").evaluateModel>;
+  rulesMetrics: ReturnType<typeof evaluateRulesBaseline>;
+  modelVersion: string;
+  datasetSize: number;
+  trainingTimeMs: number;
+}
+
+export async function runTraining(options?: {
+  extraSamples?: DatasetSample[];
+}): Promise<RunTrainingResult> {
+  const startTime = Date.now();
   const dataset = loadDataset();
+  let samples = dataset.samples;
+
+  if (options?.extraSamples?.length) {
+    samples = [...dataset.samples, ...options.extraSamples];
+  }
+
   console.log(
-    `Loaded ${dataset.samples.length} samples with ${NUM_FEATURES} features`,
+    `Loaded ${samples.length} samples (synthetic: ${dataset.samples.length}, extra: ${options?.extraSamples?.length ?? 0})`,
   );
 
-  const { train, val, test } = splitDataset(dataset.samples);
+  const { train, val, test } = splitDataset(samples);
   console.log(
     `Split: ${train.length} train, ${val.length} val, ${test.length} test`,
   );
@@ -191,9 +208,6 @@ async function main() {
 
   const model = buildModel();
   model.summary();
-
-  const EPOCHS = 50;
-  const BATCH_SIZE = 64;
 
   console.log(
     `\nTraining for ${EPOCHS} epochs (batch size ${BATCH_SIZE})...\n`,
@@ -355,9 +369,31 @@ async function main() {
   );
 
   saveDb();
-  console.log(`\nMetrics saved to database (version: ${modelVersion})`);
-  console.log(`Training completed in ${(trainingTimeMs / 1000).toFixed(1)}s`);
 
+  // Cleanup tensors
+  trainData.xs.dispose();
+  trainData.ys.dispose();
+  valData.xs.dispose();
+  valData.ys.dispose();
+  testData.xs.dispose();
+  testData.ys.dispose();
+
+  return {
+    mlMetrics,
+    rulesMetrics,
+    modelVersion,
+    datasetSize: samples.length,
+    trainingTimeMs,
+  };
+}
+
+async function main() {
+  console.log("=== RAA TensorFlow.js Trainer ===\n");
+  const result = await runTraining();
+  console.log(`\nMetrics saved to database (version: ${result.modelVersion})`);
+  console.log(
+    `Training completed in ${(result.trainingTimeMs / 1000).toFixed(1)}s`,
+  );
   console.log("\n--- NOTA: Limitação do Dataset Sintético ---");
   console.log(
     "Os perfis de comportamento do dataset sintético possuem padrões bem definidos",
@@ -371,14 +407,6 @@ async function main() {
   console.log(
     "Esta ressalva deve constar na seção de limitações da monografia.",
   );
-
-  // Cleanup tensors
-  trainData.xs.dispose();
-  trainData.ys.dispose();
-  valData.xs.dispose();
-  valData.ys.dispose();
-  testData.xs.dispose();
-  testData.ys.dispose();
 }
 
 main().catch(console.error);

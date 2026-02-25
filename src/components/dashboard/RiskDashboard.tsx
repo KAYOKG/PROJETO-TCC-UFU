@@ -1,18 +1,26 @@
 import PsychologyIcon from '@mui/icons-material/Psychology';
 import RefreshIcon from '@mui/icons-material/Refresh';
+import ScienceIcon from '@mui/icons-material/Science';
 import TuneIcon from '@mui/icons-material/Tune';
 import Box from '@mui/material/Box';
+import Button from '@mui/material/Button';
 import Card from '@mui/material/Card';
 import CardContent from '@mui/material/CardContent';
 import Chip from '@mui/material/Chip';
 import CircularProgress from '@mui/material/CircularProgress';
 import Divider from '@mui/material/Divider';
+import FormControl from '@mui/material/FormControl';
 import Grid from '@mui/material/Grid';
 import IconButton from '@mui/material/IconButton';
+import InputLabel from '@mui/material/InputLabel';
+import MenuItem from '@mui/material/MenuItem';
+import Select from '@mui/material/Select';
 import Slider from '@mui/material/Slider';
 import Tooltip from '@mui/material/Tooltip';
 import Typography from '@mui/material/Typography';
-import { useEffect } from 'react';
+import { useEffect, useState } from 'react';
+import { useAuthStore } from '../../store/useAuthStore';
+import { useLogStore } from '../../store/useLogStore';
 import { useMLStore } from '../../store/useMLStore';
 import { AlertsPanel } from './AlertsPanel';
 import { AnomalyChart } from './AnomalyChart';
@@ -22,13 +30,55 @@ import { LearningCurveChart } from './LearningCurveChart';
 import { MetricsPanel } from './MetricsPanel';
 import { UserRiskScore } from './UserRiskScore';
 
+const SENSITIVE_ACTIONS = [
+  { action: 'Visualizar contrato', module: 'Contratos' },
+  { action: 'Exportar dados', module: 'Gestão' },
+  { action: 'Acesso a dados sensíveis', module: 'Sistema' },
+  { action: 'Alteração de configuração', module: 'Sistema' },
+  { action: 'Exportar relatório', module: 'Contratos' },
+  { action: 'Visualizar documento confidencial', module: 'Contratos' },
+];
+
+const SIMULATE_TARGET_USERS = [
+  { id: 'user1', name: 'user1' },
+  { id: 'user2', name: 'user2' },
+] as const;
+
 export function RiskDashboard() {
   const { modelLoaded, modelLoading, modelError, initializeModel, retryModelLoad, loadDashboardData, threshold, setThreshold } = useMLStore();
+  const role = useAuthStore((s) => s.user?.role);
+  const [simulating, setSimulating] = useState(false);
+  const [simulateTargetUser, setSimulateTargetUser] = useState<string>('user1');
+  const showSimulate = role === 'superadmin' || import.meta.env.DEV;
 
   useEffect(() => {
     initializeModel();
     loadDashboardData();
   }, []);
+
+  const runSimulateSuspicious = async () => {
+    if (simulating || !modelLoaded) return;
+    setSimulating(true);
+    const targetId = SIMULATE_TARGET_USERS.some((u) => u.id === simulateTargetUser) ? simulateTargetUser : 'user1';
+    const targetName = SIMULATE_TARGET_USERS.find((u) => u.id === targetId)?.name ?? 'user1';
+    const addLog = useLogStore.getState().addLog;
+    const iterations = 18;
+    const delayMs = 400;
+    for (let i = 0; i < iterations; i++) {
+      const { action, module } = SENSITIVE_ACTIONS[i % SENSITIVE_ACTIONS.length];
+      addLog({
+        userName: targetName,
+        userId: targetId,
+        accessLevel: 'user',
+        action,
+        details: `Simulação de ação suspeita #${i + 1} - ${action}`,
+        origin: { module, device: navigator.platform, browser: navigator.userAgent },
+        result: 'success',
+      });
+      await new Promise((r) => setTimeout(r, delayMs));
+    }
+    setSimulating(false);
+  };
 
   return (
     <Box>
@@ -80,6 +130,39 @@ export function RiskDashboard() {
                   </Tooltip>
                 )}
               </Box>
+
+              {showSimulate && (
+                <>
+                  <Divider orientation="vertical" flexItem />
+                  <FormControl size="small" sx={{ minWidth: 140 }}>
+                    <InputLabel id="simulate-user-label">Usuário alvo</InputLabel>
+                    <Select
+                      labelId="simulate-user-label"
+                      value={simulateTargetUser}
+                      label="Usuário alvo"
+                      onChange={(e) => setSimulateTargetUser(e.target.value)}
+                    >
+                      {SIMULATE_TARGET_USERS.map((u) => (
+                        <MenuItem key={u.id} value={u.id}>{u.name}</MenuItem>
+                      ))}
+                    </Select>
+                  </FormControl>
+                  <Tooltip title="Dispara ações de negócio simuladas para o usuário alvo (detecção e bloqueio)">
+                    <span>
+                      <Button
+                        size="small"
+                        variant="outlined"
+                        color="warning"
+                        startIcon={simulating ? <CircularProgress size={16} color="inherit" /> : <ScienceIcon />}
+                        onClick={runSimulateSuspicious}
+                        disabled={simulating || !modelLoaded}
+                      >
+                        {simulating ? 'Simulando...' : 'Simular Ações Suspeitas'}
+                      </Button>
+                    </span>
+                  </Tooltip>
+                </>
+              )}
             </Box>
           </Box>
         </CardContent>

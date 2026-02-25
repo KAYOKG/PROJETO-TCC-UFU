@@ -264,7 +264,7 @@ function getColumns(selectedLogId: string | null): GridColDef[] {
 
 function LogDetailPanel({ log, onClose }: { log: SystemLog; onClose: () => void }) {
   const Section = ({ title, children }: { title: string; children: React.ReactNode }) => (
-    <Paper variant="outlined" sx={{ p: 2 }}>
+    <Paper variant="outlined" sx={{ p: 1.5 }}>
       <Typography variant="subtitle2" color="primary" gutterBottom>{title}</Typography>
       {children}
     </Paper>
@@ -278,14 +278,14 @@ function LogDetailPanel({ log, onClose }: { log: SystemLog; onClose: () => void 
   );
 
   return (
-    <Card variant="outlined" sx={{ mt: 2 }}>
-      <CardContent>
-        <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 2 }}>
+    <Card variant="outlined" sx={{ mt: 1 }}>
+      <CardContent sx={{ py: 1.5, px: 1.5, '&:last-child': { pb: 1.5 } }}>
+        <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 1 }}>
           <Typography variant="h6">Detalhes do Log</Typography>
           <IconButton size="small" onClick={onClose}><CloseIcon /></IconButton>
         </Box>
 
-        <Grid container spacing={2}>
+        <Grid container spacing={1.5}>
           <Grid size={{ xs: 12, md: 4 }}>
             <Section title="Informações Gerais">
               <Info label="ID" value={log.id} />
@@ -302,17 +302,10 @@ function LogDetailPanel({ log, onClose }: { log: SystemLog; onClose: () => void 
               <Info label="Nome" value={log.userName} />
               <Info label="ID" value={log.userId} />
               <Info label="Nível de Acesso" value={log.accessLevel} />
-              {(log.origin?.ipv4Address || log.origin?.ipAddress) && (
-                <Info label="IPv4" value={log.origin.ipv4Address || log.origin.ipAddress} />
-              )}
-              {log.origin?.ipv6Address && (
-                <Info label="IPv6" value={log.origin.ipv6Address} />
-              )}
-              {!log.origin?.ipv4Address && !log.origin?.ipv6Address && !log.origin?.ipAddress && (
-                <Info label="IP" value="Não disponível" />
-              )}
               {log.session && (
                 <>
+                  <Info label="Início da Sessão" value={formatDate(log.session.startTime)} />
+                  <Info label="Última Atividade" value={formatDate(log.session.lastActivity)} />
                   <Info label="Duração da Sessão" value={formatDuration(log.session.startTime, log.timestamp)} />
                   <Info label="Tentativas de Login" value={log.session.loginAttempts} />
                   {(log.session.inactivityTime ?? 0) > 0 && (
@@ -324,10 +317,23 @@ function LogDetailPanel({ log, onClose }: { log: SystemLog; onClose: () => void 
           </Grid>
 
           <Grid size={{ xs: 12, md: 4 }}>
+            <Section title="Endereço IP">
+              <Info
+                label="IPv4"
+                value={log.origin?.ipv4Address || log.origin?.ipAddress || undefined}
+              />
+              <Info
+                label="IPv6"
+                value={log.origin?.ipv6Address}
+              />
+            </Section>
+          </Grid>
+
+          <Grid size={{ xs: 12, md: 4 }}>
             <Section title="Origem & Rede">
               <Info label="Módulo" value={log.origin?.module} />
               <Info label="Dispositivo" value={log.origin?.device} />
-              <Info label="Browser" value={log.origin?.browser} />
+              <Info label="Navegador" value={log.origin?.browser} />
               {log.origin?.network && (
                 <>
                   <Info label="Tipo de Rede" value={log.origin.network.type} />
@@ -340,48 +346,58 @@ function LogDetailPanel({ log, onClose }: { log: SystemLog; onClose: () => void 
             </Section>
           </Grid>
 
-          {log.origin?.geolocation && (
+          {(log.origin?.geolocation?.latitude != null || log.origin?.geolocation?.longitude != null) && (
             <Grid size={{ xs: 12 }}>
               <Section title="Localização Detalhada">
-                <Grid container spacing={2}>
+                <Grid container spacing={1.5}>
                   <Grid size={{ xs: 12, sm: 6, md: 3 }}>
-                    <Info label="Cidade" value={log.origin.geolocation.city} />
+                    <Info label="Cidade" value={log.origin.geolocation?.city} />
                   </Grid>
                   <Grid size={{ xs: 12, sm: 6, md: 3 }}>
-                    <Info label="Estado" value={log.origin.geolocation.state} />
+                    <Info label="Estado" value={log.origin.geolocation?.state} />
                   </Grid>
                   <Grid size={{ xs: 12, sm: 6, md: 3 }}>
-                    <Info label="País" value={log.origin.geolocation.country} />
+                    <Info label="País" value={log.origin.geolocation?.country} />
                   </Grid>
                   <Grid size={{ xs: 12, sm: 6, md: 3 }}>
                     <Info
                       label="Coordenadas"
                       value={
-                        log.origin.geolocation.latitude != null && log.origin.geolocation.longitude != null
+                        log.origin.geolocation?.latitude != null && log.origin.geolocation?.longitude != null
                           ? `${log.origin.geolocation.latitude.toFixed(6)}°, ${log.origin.geolocation.longitude.toFixed(6)}°`
                           : undefined
                       }
                     />
                   </Grid>
                 </Grid>
-                <Typography variant="caption" color="text.secondary" sx={{ display: 'block', mt: 1 }}>
-                  Endereço completo: {[
-                    log.origin.geolocation.city,
-                    log.origin.geolocation.state,
-                    log.origin.geolocation.country,
-                  ]
-                    .filter(Boolean)
-                    .join(', ')}
-                </Typography>
+                {([log.origin.geolocation?.city, log.origin.geolocation?.state, log.origin.geolocation?.country].filter(Boolean).length > 0) && (
+                  <Typography variant="caption" color="text.secondary" sx={{ display: 'block', mt: 0.5 }}>
+                    Endereço completo: {[
+                      log.origin.geolocation?.city,
+                      log.origin.geolocation?.state,
+                      log.origin.geolocation?.country,
+                    ]
+                      .filter(Boolean)
+                      .join(', ')}
+                  </Typography>
+                )}
+                {(!log.origin.geolocation?.city && !log.origin.geolocation?.state && !log.origin.geolocation?.country) &&
+                  log.origin.geolocation?.latitude != null &&
+                  log.origin.geolocation?.longitude != null && (
+                    <Typography variant="caption" color="text.secondary" sx={{ display: 'block', mt: 0.5 }}>
+                      Cidade, estado e país serão preenchidos automaticamente quando a geolocalização for obtida.
+                    </Typography>
+                  )}
               </Section>
             </Grid>
           )}
 
-          {log.elementInfo && (
+          {log.elementInfo && (log.elementInfo.id || log.elementInfo.type || log.elementInfo.text || log.elementInfo.className) && (
             <Grid size={{ xs: 12 }}>
               <Section title="Elemento Interagido">
-                {log.elementInfo.id && <Info label="ID" value={log.elementInfo.id} />}
+                {log.elementInfo.id && <Info label="ID do Elemento" value={log.elementInfo.id} />}
                 {log.elementInfo.type && <Info label="Tipo" value={log.elementInfo.type} />}
+                {log.elementInfo.className && <Info label="Classe CSS" value={log.elementInfo.className} />}
                 {log.elementInfo.text && <Info label="Texto" value={log.elementInfo.text} />}
               </Section>
             </Grid>
@@ -480,7 +496,16 @@ export function SystemLogs() {
 
       <Collapse in={!!selectedLog} sx={{ flexShrink: 0 }}>
         {selectedLog && (
-          <Box sx={{ p: 2 }}>
+          <Box
+            sx={{
+              p: 1.5,
+              maxHeight: '45vh',
+              overflowY: 'auto',
+              borderTop: '1px solid',
+              borderColor: 'divider',
+              bgcolor: 'grey.50',
+            }}
+          >
             <LogDetailPanel log={selectedLog} onClose={() => setSelectedLogId(null)} />
           </Box>
         )}

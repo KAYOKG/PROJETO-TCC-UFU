@@ -1,8 +1,15 @@
 import { create } from "zustand";
 import { applyStaticRules, classifyLog } from "../ml/inferenceEngine";
 import { isModelLoaded, loadModel } from "../ml/modelLoader";
-import { fetchAlertsSummary, fetchTrainingMetrics } from "../services/api";
+import {
+  createIncident,
+  fetchAlertsSummary,
+  fetchTrainingMetrics,
+  reportPrediction,
+} from "../services/api";
 import { MLPrediction, RiskAlert, SystemLog, TrainingMetrics } from "../types";
+import { useAuthStore } from "./useAuthStore";
+import { useBlockStore } from "./useBlockStore";
 
 interface MLState {
   predictions: MLPrediction[];
@@ -73,6 +80,22 @@ export const useMLStore = create<MLState>((set, get) => ({
   },
 
   analyzeLog: async (log: SystemLog, recentLogs: SystemLog[]) => {
+    // SuperAdmin é o observador, nunca o observado
+    if (String(log.userId).toLowerCase() === "superadmin") return;
+    // Usuário sistema não é analisado pelo ML
+    if (
+      String(log.userId).toLowerCase() === "system" ||
+      String(log.userName).toLowerCase() === "sistema"
+    )
+      return;
+    // Cliques de UI são apenas registrados; não passam pela inferência ML (evita incidentes falsos)
+    if (
+      log.interactionType === "click" ||
+      (log.action &&
+        String(log.action).includes("Interação do Usuário - click"))
+    )
+      return;
+
     const { threshold } = get();
 
     // ML prediction
@@ -85,6 +108,12 @@ export const useMLStore = create<MLState>((set, get) => ({
     const rulesResult = applyStaticRules(log, recentLogs);
 
     if (mlPrediction) {
+      reportPrediction({
+        userId: log.userId,
+        riskScore: mlPrediction.riskScore,
+        logId: log.id,
+      }).catch(() => {});
+
       set((state) => {
         const predictions = [mlPrediction, ...state.predictions].slice(0, 500);
 
@@ -107,6 +136,30 @@ export const useMLStore = create<MLState>((set, get) => ({
             isMlDetection: true,
             createdAt: new Date().toISOString(),
           });
+          createIncident({
+            logId: log.id,
+            userId: log.userId,
+            userName: log.userName,
+            action: log.action,
+            details: log.details ?? "",
+            riskScore: mlPrediction.riskScore,
+            mlPrediction: mlPrediction.riskScore,
+            featureVector: mlPrediction.featureVector,
+          })
+            .then((body) => {
+              // SuperAdmin nunca é suspenso: só recebe alertas
+              if (useAuthStore.getState().user?.role === "superadmin") return;
+              useBlockStore.getState().setBlocked({
+                blockedUntil:
+                  body.blocked_until ??
+                  new Date(Date.now() + 3 * 60 * 1000).toISOString(),
+                reason:
+                  body.reason ??
+                  "Atividade incomum detectada. Aguarde revisão.",
+                status: "timeout",
+              });
+            })
+            .catch(() => {});
         }
 
         if (rulesResult.isSuspicious) {

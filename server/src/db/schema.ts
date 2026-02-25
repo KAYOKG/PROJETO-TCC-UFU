@@ -1,4 +1,4 @@
-import { getDb, saveDb } from './connection.js';
+import { getDb, saveDb } from "./connection.js";
 
 export async function initializeDatabase(): Promise<void> {
   const db = await getDb();
@@ -39,7 +39,9 @@ export async function initializeDatabase(): Promise<void> {
   `);
 
   db.run(`CREATE INDEX IF NOT EXISTS idx_logs_user_id ON system_logs(user_id)`);
-  db.run(`CREATE INDEX IF NOT EXISTS idx_logs_timestamp ON system_logs(timestamp)`);
+  db.run(
+    `CREATE INDEX IF NOT EXISTS idx_logs_timestamp ON system_logs(timestamp)`,
+  );
   db.run(`CREATE INDEX IF NOT EXISTS idx_logs_action ON system_logs(action)`);
   db.run(`CREATE INDEX IF NOT EXISTS idx_logs_module ON system_logs(module)`);
 
@@ -58,8 +60,12 @@ export async function initializeDatabase(): Promise<void> {
     )
   `);
 
-  db.run(`CREATE INDEX IF NOT EXISTS idx_alerts_user_id ON risk_alerts(user_id)`);
-  db.run(`CREATE INDEX IF NOT EXISTS idx_alerts_created ON risk_alerts(created_at)`);
+  db.run(
+    `CREATE INDEX IF NOT EXISTS idx_alerts_user_id ON risk_alerts(user_id)`,
+  );
+  db.run(
+    `CREATE INDEX IF NOT EXISTS idx_alerts_created ON risk_alerts(created_at)`,
+  );
 
   db.run(`
     CREATE TABLE IF NOT EXISTS training_metrics (
@@ -89,6 +95,92 @@ export async function initializeDatabase(): Promise<void> {
       mean_val REAL,
       std_val REAL,
       updated_at TEXT DEFAULT (datetime('now'))
+    )
+  `);
+
+  db.run(`
+    CREATE TABLE IF NOT EXISTS incidents (
+      id INTEGER PRIMARY KEY AUTOINCREMENT,
+      log_id TEXT,
+      user_id TEXT NOT NULL,
+      user_name TEXT NOT NULL,
+      action TEXT NOT NULL,
+      details TEXT,
+      risk_score REAL NOT NULL,
+      ml_prediction REAL NOT NULL,
+      feature_vector TEXT,
+      status TEXT NOT NULL DEFAULT 'pending',
+      admin_decision TEXT,
+      admin_notes TEXT,
+      created_at TEXT DEFAULT (datetime('now')),
+      resolved_at TEXT,
+      blocked_until TEXT
+    )
+  `);
+  db.run(
+    `CREATE INDEX IF NOT EXISTS idx_incidents_status ON incidents(status)`,
+  );
+  db.run(
+    `CREATE INDEX IF NOT EXISTS idx_incidents_user_id ON incidents(user_id)`,
+  );
+  db.run(
+    `CREATE INDEX IF NOT EXISTS idx_incidents_created ON incidents(created_at)`,
+  );
+
+  db.run(`
+    CREATE TABLE IF NOT EXISTS feedback_labels (
+      id INTEGER PRIMARY KEY AUTOINCREMENT,
+      incident_id INTEGER NOT NULL REFERENCES incidents(id),
+      feature_vector TEXT NOT NULL,
+      label INTEGER NOT NULL,
+      decided_by TEXT NOT NULL,
+      decided_at TEXT DEFAULT (datetime('now'))
+    )
+  `);
+  db.run(
+    `CREATE INDEX IF NOT EXISTS idx_feedback_incident_id ON feedback_labels(incident_id)`,
+  );
+
+  db.run(`
+    CREATE TABLE IF NOT EXISTS user_blocks (
+      id INTEGER PRIMARY KEY AUTOINCREMENT,
+      user_id TEXT NOT NULL,
+      blocked_at TEXT NOT NULL DEFAULT (datetime('now')),
+      blocked_until TEXT,
+      reason TEXT,
+      incident_id INTEGER REFERENCES incidents(id),
+      unblocked_by TEXT,
+      unblocked_at TEXT,
+      status TEXT NOT NULL DEFAULT 'active'
+    )
+  `);
+  db.run(
+    `CREATE INDEX IF NOT EXISTS idx_user_blocks_user_id ON user_blocks(user_id)`,
+  );
+  db.run(
+    `CREATE INDEX IF NOT EXISTS idx_user_blocks_status ON user_blocks(status)`,
+  );
+
+  db.run(`
+    CREATE TABLE IF NOT EXISTS risk_predictions (
+      id INTEGER PRIMARY KEY AUTOINCREMENT,
+      user_id TEXT NOT NULL,
+      risk_score REAL NOT NULL,
+      log_id TEXT,
+      created_at TEXT DEFAULT (datetime('now'))
+    )
+  `);
+  db.run(
+    `CREATE INDEX IF NOT EXISTS idx_risk_predictions_user_id ON risk_predictions(user_id)`,
+  );
+  db.run(
+    `CREATE INDEX IF NOT EXISTS idx_risk_predictions_created ON risk_predictions(created_at)`,
+  );
+
+  db.run(`
+    CREATE TABLE IF NOT EXISTS session_invalidations (
+      user_id TEXT PRIMARY KEY,
+      invalidated_at TEXT NOT NULL DEFAULT (datetime('now'))
     )
   `);
 

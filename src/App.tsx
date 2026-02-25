@@ -8,18 +8,24 @@ import Card from '@mui/material/Card';
 import CardContent from '@mui/material/CardContent';
 import Snackbar from '@mui/material/Snackbar';
 import Typography from '@mui/material/Typography';
-import { useCallback, useEffect, useState } from 'react';
-import { BrowserRouter, Route, Routes, useNavigate } from 'react-router-dom';
+import { useEffect, useState } from 'react';
+import { BrowserRouter, Navigate, Route, Routes, useLocation, useNavigate } from 'react-router-dom';
+import { BlockedScreen } from './components/BlockedScreen';
 import { ClientList } from './components/ClientList';
 import { ContractManagement } from './components/ContractManagement';
 import { ContractPreview } from './components/ContractPreview';
 import { Layout } from './components/Layout';
+import { LoginPage } from './components/LoginPage';
 import { SystemLogs } from './components/SystemLogs';
+import { AdminIncidentPanel } from './components/admin/AdminIncidentPanel';
 import { RiskDashboard } from './components/dashboard/RiskDashboard';
 import { ClientForm } from './components/forms/ClientForm';
 import { CompanyForm } from './components/forms/CompanyForm';
 import { ContractForm } from './components/forms/ContractForm';
 import { MOCK_CLIENTS, MOCK_COMPANY, MOCK_CONTRACTS } from './data/mockData';
+import { getUserBlock } from './services/api';
+import { useAuthStore } from './store/useAuthStore';
+import { useBlockStore } from './store/useBlockStore';
 import { useLogStore } from './store/useLogStore';
 import { Client, Company, Contract } from './types';
 
@@ -28,6 +34,12 @@ const STORAGE_KEYS = {
   company: 'raa_company',
   contracts: 'raa_contracts',
 } as const;
+
+function AdminIncidentsRoute() {
+  const role = useAuthStore((s) => s.user?.role);
+  if (role !== 'superadmin') return <Navigate to="/" replace />;
+  return <AdminIncidentPanel />;
+}
 
 function loadFromStorage<T>(key: string, fallback: T): T {
   try {
@@ -56,10 +68,34 @@ function AppContent() {
 
   const addLog = useLogStore((state) => state.addLog);
   const updateSession = useLogStore((state) => state.updateSession);
+  const userId = useAuthStore((s) => s.user?.userId);
 
   useEffect(() => {
     updateSession({ loginAttempts: 1, startTime: new Date(), lastActivity: new Date() });
   }, []);
+
+  useEffect(() => {
+    if (!userId) return;
+    const interval = setInterval(async () => {
+      try {
+        if (useAuthStore.getState().user?.role === 'superadmin') return; // SuperAdmin nunca é suspenso
+        const data = await getUserBlock(userId);
+        const blocked = useBlockStore.getState().blocked;
+        if (data.blocked && !blocked) {
+          useBlockStore.getState().setBlocked({
+            blockedUntil: data.blockedUntil ?? new Date(Date.now() + 3 * 60 * 1000).toISOString(),
+            reason: data.reason ?? '',
+            status: 'timeout',
+          });
+        } else if (!data.blocked && blocked) {
+          useBlockStore.getState().clearBlocked();
+        }
+      } catch {
+        // ignore
+      }
+    }, 10_000);
+    return () => clearInterval(interval);
+  }, [userId]);
 
   useEffect(() => { saveToStorage(STORAGE_KEYS.clients, clients); }, [clients]);
   useEffect(() => { saveToStorage(STORAGE_KEYS.company, company); }, [company]);
@@ -69,13 +105,16 @@ function AppContent() {
     setSnackbar({ open: true, message, severity });
   };
 
-  const getUserInfo = () => ({
-    userName: 'Admin',
-    userId: 'admin-001',
-    accessLevel: 'admin' as const,
-    device: navigator.platform,
-    browser: navigator.userAgent,
-  });
+  const getUserInfo = () => {
+    const u = useAuthStore.getState().user;
+    return {
+      userName: u?.userName ?? 'Sistema',
+      userId: u?.userId ?? 'system',
+      accessLevel: (u?.role === 'superadmin' ? 'admin' : 'user') as 'admin' | 'user',
+      device: navigator.platform,
+      browser: navigator.userAgent,
+    };
+  };
 
   const handleClientSubmit = (clientData: Omit<Client, 'id'>) => {
     const newClient = { ...clientData, id: Math.random().toString(36).substr(2, 9) };
@@ -305,6 +344,7 @@ function AppContent() {
         />
         <Route path="/logs" element={<SystemLogs />} />
         <Route path="/dashboard" element={<RiskDashboard />} />
+        <Route path="/admin/incidents" element={<AdminIncidentsRoute />} />
       </Routes>
 
       <Snackbar
@@ -325,10 +365,37 @@ function AppContent() {
   );
 }
 
+function AuthGuard({ children }: { children: React.ReactNode }) {
+  const isAuthenticated = useAuthStore((s) => s.isAuthenticated);
+  const location = useLocation();
+  const isLogin = location.pathname === '/login';
+
+  if (!isAuthenticated && !isLogin) {
+    return <Navigate to="/login" replace />;
+  }
+  if (isAuthenticated && isLogin) {
+    return <Navigate to="/" replace />;
+  }
+  if (isLogin) {
+    return <LoginPage />;
+  }
+  return <>{children}</>;
+}
+
 function App() {
+  const hydrate = useAuthStore((s) => s.hydrate);
+  useEffect(() => {
+    hydrate();
+  }, [hydrate]);
+
   return (
     <BrowserRouter>
-      <AppContent />
+      <AuthGuard>
+        <>
+          <BlockedScreen />
+          <AppContent />
+        </>
+      </AuthGuard>
     </BrowserRouter>
   );
 }

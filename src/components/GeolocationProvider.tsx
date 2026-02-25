@@ -1,6 +1,7 @@
 import { publicIpv4, publicIpv6 } from 'public-ip';
-import React, { useEffect } from 'react';
+import React, { useEffect, useRef } from 'react';
 import { useGeolocated } from 'react-geolocated';
+import { reverseGeocode } from '../services/geocoding';
 import { useLogStore } from '../store/useLogStore';
 
 export const GeolocationProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
@@ -14,14 +15,28 @@ export const GeolocationProvider: React.FC<{ children: React.ReactNode }> = ({ c
 
   const updateGeolocation = useLogStore(state => state.updateGeolocation);
   const updateIpAddresses = useLogStore(state => state.updateIpAddresses);
+  const lastGeocodeRef = useRef<string>('');
 
   useEffect(() => {
-    if (coords) {
-      updateGeolocation({
-        latitude: coords.latitude,
-        longitude: coords.longitude,
-      });
-    }
+    if (!coords) return;
+    const key = `${coords.latitude.toFixed(4)},${coords.longitude.toFixed(4)}`;
+    if (lastGeocodeRef.current === key) return;
+    lastGeocodeRef.current = key;
+
+    const run = async () => {
+      updateGeolocation({ latitude: coords.latitude, longitude: coords.longitude });
+      const geo = await reverseGeocode(coords.latitude, coords.longitude);
+      if (geo.city || geo.state || geo.country) {
+        updateGeolocation({
+          latitude: coords.latitude,
+          longitude: coords.longitude,
+          city: geo.city,
+          state: geo.state,
+          country: geo.country,
+        });
+      }
+    };
+    run();
   }, [coords, updateGeolocation]);
 
   useEffect(() => {

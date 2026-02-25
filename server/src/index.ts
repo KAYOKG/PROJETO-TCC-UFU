@@ -3,8 +3,12 @@ import express from "express";
 import { closeDb } from "./db/connection.js";
 import { initializeDatabase } from "./db/schema.js";
 import alertsRouter from "./routes/alerts.js";
+import incidentsRouter from "./routes/incidents.js";
 import logsRouter from "./routes/logs.js";
+import mlRouter from "./routes/ml.js";
 import modelRouter from "./routes/model.js";
+import userBlocksRouter from "./routes/userBlocks.js";
+import usersRouter from "./routes/users.js";
 
 const app = express();
 const PORT = process.env.PORT ? Number(process.env.PORT) : 3001;
@@ -28,6 +32,10 @@ async function start() {
 
   app.use("/api/logs", logsRouter);
   app.use("/api/alerts", alertsRouter);
+  app.use("/api/incidents", incidentsRouter);
+  app.use("/api/user-blocks", userBlocksRouter);
+  app.use("/api/users", usersRouter);
+  app.use("/api/ml", mlRouter);
   app.use("/api/model", modelRouter);
 
   app.get("/api/health", (_req, res) => {

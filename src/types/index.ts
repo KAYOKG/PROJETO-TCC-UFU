@@ -223,3 +223,27 @@ export interface ModelConfig {
   modelVersion: string;
   featureStats: FeatureStats[];
 }
+
+export interface Incident {
+  id: number;
+  log_id: string | null;
+  user_id: string;
+  user_name: string;
+  action: string;
+  details: string | null;
+  risk_score: number;
+  ml_prediction: number;
+  feature_vector: string | null;
+  status: "pending" | "confirmed_threat" | "cleared";
+  admin_decision: string | null;
+  admin_notes: string | null;
+  created_at: string;
+  resolved_at: string | null;
+  blocked_until: string | null;
+}
+
+export interface FeedbackStats {
+  count: number;
+}
+
+export type ResolveDecision = "confirm_threat" | "clear";

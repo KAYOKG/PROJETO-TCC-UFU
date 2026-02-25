@@ -12,7 +12,13 @@ interface LogState {
     element: HTMLElement,
     interactionType: "click" | "navigation" | "configuration",
   ) => void;
-  updateGeolocation: (coords: { latitude: number; longitude: number }) => void;
+  updateGeolocation: (coords: {
+    latitude: number;
+    longitude: number;
+    city?: string;
+    state?: string;
+    country?: string;
+  }) => void;
   updateIpAddress: (ip: string) => void;
   updateIpAddresses: (ips: { ipv4?: string; ipv6?: string }) => void;
 }
@@ -96,8 +102,9 @@ export const useLogStore = create<LogState>((set, get) => {
           geolocation: {
             latitude: coords.latitude,
             longitude: coords.longitude,
-            city: "Localização capturada",
-            country: "Localização capturada",
+            city: coords.city,
+            state: coords.state,
+            country: coords.country,
           },
         },
       }));
