@@ -1,8 +1,8 @@
-import { create } from 'zustand';
-import { MLPrediction, RiskAlert, TrainingMetrics, SystemLog } from '../types';
-import { classifyLog, applyStaticRules } from '../ml/inferenceEngine';
-import { isModelLoaded, loadModel } from '../ml/modelLoader';
-import { fetchAlertsSummary, fetchTrainingMetrics } from '../services/api';
+import { create } from "zustand";
+import { applyStaticRules, classifyLog } from "../ml/inferenceEngine";
+import { isModelLoaded, loadModel } from "../ml/modelLoader";
+import { fetchAlertsSummary, fetchTrainingMetrics } from "../services/api";
+import { MLPrediction, RiskAlert, SystemLog, TrainingMetrics } from "../types";
 
 interface MLState {
   predictions: MLPrediction[];
@@ -10,6 +10,7 @@ interface MLState {
   trainingMetrics: TrainingMetrics[];
   modelLoaded: boolean;
   modelLoading: boolean;
+  modelError: string | null;
   threshold: number;
   userRiskScores: Map<string, number>;
   alertsSummary: {
@@ -20,10 +21,14 @@ interface MLState {
   } | null;
 
   initializeModel: () => Promise<void>;
+  retryModelLoad: () => Promise<void>;
   analyzeLog: (log: SystemLog, recentLogs: SystemLog[]) => Promise<void>;
   setThreshold: (threshold: number) => void;
   loadDashboardData: () => Promise<void>;
 }
+
+const MAX_RETRIES = 3;
+const RETRY_DELAY_MS = 2000;
 
 export const useMLStore = create<MLState>((set, get) => ({
   predictions: [],
@@ -31,6 +36,7 @@ export const useMLStore = create<MLState>((set, get) => ({
   trainingMetrics: [],
   modelLoaded: false,
   modelLoading: false,
+  modelError: null,
   threshold: 0.7,
   userRiskScores: new Map(),
   alertsSummary: null,
@@ -38,12 +44,31 @@ export const useMLStore = create<MLState>((set, get) => ({
   initializeModel: async () => {
     if (get().modelLoaded || get().modelLoading) return;
 
-    set({ modelLoading: true });
-    try {
-      await loadModel();
-      set({ modelLoaded: true, modelLoading: false });
-    } catch {
-      set({ modelLoading: false });
+    set({ modelLoading: true, modelError: null });
+
+    for (let attempt = 1; attempt <= MAX_RETRIES; attempt++) {
+      try {
+        await loadModel();
+        set({ modelLoaded: true, modelLoading: false, modelError: null });
+        return;
+      } catch (err) {
+        if (attempt < MAX_RETRIES) {
+          await new Promise((r) => setTimeout(r, RETRY_DELAY_MS * attempt));
+        } else {
+          const msg =
+            err instanceof Error ? err.message : "Falha ao carregar modelo";
+          console.warn(`Model load failed after ${MAX_RETRIES} attempts:`, msg);
+          set({ modelLoading: false, modelError: msg });
+        }
+      }
+    }
+  },
+
+  retryModelLoad: async () => {
+    set({ modelLoaded: false, modelLoading: false, modelError: null });
+    await get().initializeModel();
+    if (get().modelLoaded) {
+      await get().loadDashboardData();
     }
   },
 
@@ -60,7 +85,7 @@ export const useMLStore = create<MLState>((set, get) => ({
     const rulesResult = applyStaticRules(log, recentLogs);
 
     if (mlPrediction) {
-      set(state => {
+      set((state) => {
         const predictions = [mlPrediction, ...state.predictions].slice(0, 500);
 
         const userRiskScores = new Map(state.userRiskScores);
@@ -77,7 +102,7 @@ export const useMLStore = create<MLState>((set, get) => ({
             userId: log.userId,
             userName: log.userName,
             riskScore: mlPrediction.riskScore,
-            alertType: mlPrediction.alertType ?? 'Anomalous Behavior',
+            alertType: mlPrediction.alertType ?? "Anomalous Behavior",
             description: `ML detectou comportamento suspeito: ${log.action} (score: ${mlPrediction.riskScore.toFixed(3)})`,
             isMlDetection: true,
             createdAt: new Date().toISOString(),
@@ -91,8 +116,8 @@ export const useMLStore = create<MLState>((set, get) => ({
             userId: log.userId,
             userName: log.userName,
             riskScore: rulesResult.score,
-            alertType: 'Rule Violation',
-            description: `Regras: ${rulesResult.rules.join('; ')}`,
+            alertType: "Rule Violation",
+            description: `Regras: ${rulesResult.rules.join("; ")}`,
             isMlDetection: false,
             createdAt: new Date().toISOString(),
           });

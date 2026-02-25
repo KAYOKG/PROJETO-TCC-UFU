@@ -8,7 +8,7 @@ import Card from '@mui/material/Card';
 import CardContent from '@mui/material/CardContent';
 import Snackbar from '@mui/material/Snackbar';
 import Typography from '@mui/material/Typography';
-import { useEffect, useState } from 'react';
+import { useCallback, useEffect, useState } from 'react';
 import { BrowserRouter, Route, Routes, useNavigate } from 'react-router-dom';
 import { ClientList } from './components/ClientList';
 import { ContractManagement } from './components/ContractManagement';
@@ -19,15 +19,36 @@ import { RiskDashboard } from './components/dashboard/RiskDashboard';
 import { ClientForm } from './components/forms/ClientForm';
 import { CompanyForm } from './components/forms/CompanyForm';
 import { ContractForm } from './components/forms/ContractForm';
+import { MOCK_CLIENTS, MOCK_COMPANY, MOCK_CONTRACTS } from './data/mockData';
 import { useLogStore } from './store/useLogStore';
 import { Client, Company, Contract } from './types';
+
+const STORAGE_KEYS = {
+  clients: 'raa_clients',
+  company: 'raa_company',
+  contracts: 'raa_contracts',
+} as const;
+
+function loadFromStorage<T>(key: string, fallback: T): T {
+  try {
+    const stored = localStorage.getItem(key);
+    if (stored) return JSON.parse(stored);
+  } catch { /* ignore corrupt data */ }
+  return fallback;
+}
+
+function saveToStorage(key: string, data: unknown): void {
+  try {
+    localStorage.setItem(key, JSON.stringify(data));
+  } catch { /* quota exceeded, etc. */ }
+}
 
 function AppContent() {
   const navigate = useNavigate();
   const [showClientForm, setShowClientForm] = useState(false);
-  const [clients, setClients] = useState<Client[]>([]);
-  const [company, setCompany] = useState<Company | null>(null);
-  const [contracts, setContracts] = useState<Contract[]>([]);
+  const [clients, setClients] = useState<Client[]>(() => loadFromStorage(STORAGE_KEYS.clients, MOCK_CLIENTS));
+  const [company, setCompany] = useState<Company | null>(() => loadFromStorage(STORAGE_KEYS.company, MOCK_COMPANY));
+  const [contracts, setContracts] = useState<Contract[]>(() => loadFromStorage(STORAGE_KEYS.contracts, MOCK_CONTRACTS));
   const [selectedContract, setSelectedContract] = useState<Contract | null>(null);
   const [snackbar, setSnackbar] = useState<{ open: boolean; message: string; severity: 'success' | 'error' }>({
     open: false, message: '', severity: 'success',
@@ -39,6 +60,10 @@ function AppContent() {
   useEffect(() => {
     updateSession({ loginAttempts: 1, startTime: new Date(), lastActivity: new Date() });
   }, []);
+
+  useEffect(() => { saveToStorage(STORAGE_KEYS.clients, clients); }, [clients]);
+  useEffect(() => { saveToStorage(STORAGE_KEYS.company, company); }, [company]);
+  useEffect(() => { saveToStorage(STORAGE_KEYS.contracts, contracts); }, [contracts]);
 
   const notify = (message: string, severity: 'success' | 'error' = 'success') => {
     setSnackbar({ open: true, message, severity });

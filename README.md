@@ -28,6 +28,7 @@ Sistemas corporativos (ERPs) são alvos frequentes de atividades indevidas desde
 
 ### Resultado Alcançado
 
+
 | Métrica      | Modelo ML  | Regras Estáticas | Melhoria   |
 | ------------ | ---------- | ---------------- | ---------- |
 | **F1-Score** | **99.37%** | 72.79%           | **+36.5%** |
@@ -35,6 +36,7 @@ Sistemas corporativos (ERPs) são alvos frequentes de atividades indevidas desde
 | Precision    | 99.54%     | 58.56%           | +70.0%     |
 | Recall       | 99.21%     | 96.27%           | +3.1%      |
 | AUC-ROC      | 0.9998     | —                | —          |
+
 
 > ⚠️ **Nota:** Métricas obtidas com dataset sintético (ver [Limitações](#limitações)).
 
@@ -69,7 +71,10 @@ graph TB
     API -->|model.json + weights.bin| TFInfer
 ```
 
+
+
 ### Decisões Arquiteturais
+
 
 | Decisão                               | Justificativa                                                                                                                                            |
 | ------------------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------- |
@@ -77,6 +82,7 @@ graph TB
 | **TF.js no frontend** para inferência | Classificação em tempo real no navegador sem latência de rede, modelo carregado uma única vez                                                            |
 | **SQLite (sql.js)**                   | Banco embeddable em puro JavaScript, sem necessidade de compilação nativa — ideal para portabilidade acadêmica                                           |
 | **Dataset sintético**                 | Dados reais de ameaças em ERPs não estão disponíveis publicamente; a geração sintética com perfis controlados permite validação reprodutível da hipótese |
+
 
 ### Pipeline de Machine Learning
 
@@ -89,9 +95,12 @@ flowchart LR
     E --> F["📊 Dashboard ML"]
 ```
 
+
+
 ### Categorias de Features (30 features)
 
 #### 🌐 Ambiente (9 features)
+
 
 | Feature                | Descrição                                             |
 | ---------------------- | ----------------------------------------------------- |
@@ -105,7 +114,9 @@ flowchart LR
 | `inactivitySeconds`    | Tempo de inatividade em segundos                      |
 | `isNewDevice`          | Indicador de dispositivo nunca visto antes            |
 
+
 #### 🧠 Comportamento (8 features)
+
 
 | Feature                    | Descrição                                                  |
 | -------------------------- | ---------------------------------------------------------- |
@@ -118,7 +129,9 @@ flowchart LR
 | `avgTimeBetweenActions`    | Tempo médio entre ações consecutivas (segundos)            |
 | `burstScore`               | Quantidade de ações no último minuto (indicador de rajada) |
 
+
 #### 📄 Contexto (13 features)
+
 
 | Feature                                            | Descrição                                         |
 | -------------------------------------------------- | ------------------------------------------------- |
@@ -127,9 +140,11 @@ flowchart LR
 | `resultEncoded`                                    | Resultado da operação (1=sucesso, 0=erro)         |
 | `sessionDurationMinutes`                           | Duração da sessão atual em minutos                |
 
+
 ---
 
 ## 🛠️ Tecnologias Utilizadas
+
 
 | Tecnologia            | Versão | Propósito                                                  |
 | --------------------- | ------ | ---------------------------------------------------------- |
@@ -146,6 +161,7 @@ flowchart LR
 | **Node.js**           | 18+    | Runtime do servidor                                        |
 | **jsPDF**             | 2.5    | Geração de contratos em PDF                                |
 
+
 ---
 
 ## 📦 Pré-requisitos
@@ -156,10 +172,12 @@ flowchart LR
 
 ### Portas Utilizadas
 
+
 | Porta  | Serviço                    |
 | ------ | -------------------------- |
 | `3001` | Backend (Express API)      |
 | `5173` | Frontend (Vite dev server) |
+
 
 ---
 
@@ -214,6 +232,7 @@ npm run train
 
 **Arquivos gerados em `server/data/trained/`:**
 
+
 | Arquivo                 | Descrição                                      |
 | ----------------------- | ---------------------------------------------- |
 | `model.json`            | Topologia da rede neural (formato TF.js)       |
@@ -221,6 +240,7 @@ npm run train
 | `learning_curve.json`   | Loss e acurácia por época (treino e validação) |
 | `confusion_matrix.json` | Matrizes de confusão do ML e do baseline       |
 | `feature_stats.json`    | Estatísticas de normalização das features      |
+
 
 ### Etapa 5 — Iniciar o backend
 
@@ -233,6 +253,9 @@ O servidor Express inicia na porta **3001** com as seguintes capacidades:
 - API REST para logs, alertas e modelo ML
 - Servir o modelo treinado para o frontend
 - Banco de dados SQLite persistido em `server/data/raa.db`
+
+use `npx kill-port 3001` para matar o processo se a porta estiver ocupada.
+
 
 ### Etapa 6 — Iniciar o frontend (segundo terminal)
 
@@ -248,6 +271,7 @@ O Vite inicia na porta **5173** com hot module replacement.
 
 Abra o navegador em **[http://localhost:5173](http://localhost:5173)** e navegue pelos módulos:
 
+
 | Módulo                  | Descrição                                                             |
 | ----------------------- | --------------------------------------------------------------------- |
 | **Clientes**            | CRUD de clientes da corretora (cadastro, edição, exclusão)            |
@@ -256,6 +280,7 @@ Abra o navegador em **[http://localhost:5173](http://localhost:5173)** e navegue
 | **Gestão de Contratos** | Acompanhamento de status e gerenciamento de contratos ativos          |
 | **Logs do Sistema**     | DataGrid com todos os logs, filtros, busca e exportação CSV           |
 | **Dashboard ML**        | Métricas, alertas, scores de risco, gráficos e análise de overfitting |
+
 
 > 💡 **Dica:** Cada ação no ERP gera logs automaticamente. O modelo ML classifica cada ação em tempo real e exibe alertas no Dashboard quando detecta comportamento suspeito.
 
@@ -267,6 +292,7 @@ Base URL: `http://localhost:3001/api`
 
 ### Logs
 
+
 | Método | Rota          | Descrição                                                                                          |
 | ------ | ------------- | -------------------------------------------------------------------------------------------------- |
 | `POST` | `/logs`       | Persiste um log de atividade                                                                       |
@@ -274,14 +300,18 @@ Base URL: `http://localhost:3001/api`
 | `GET`  | `/logs`       | Lista logs com paginação e filtros (`userId`, `startDate`, `endDate`, `limit`, `offset`)           |
 | `GET`  | `/logs/stats` | Estatísticas agregadas: total de logs, usuários únicos, distribuição por ação/módulo, taxa de erro |
 
+
 ### Alertas
+
 
 | Método | Rota              | Descrição                                                                    |
 | ------ | ----------------- | ---------------------------------------------------------------------------- |
 | `GET`  | `/alerts`         | Lista alertas de risco com filtros (`userId`, `minScore`, `limit`, `offset`) |
 | `GET`  | `/alerts/summary` | Resumo: riscos por usuário, alertas por tipo, ML vs. Regras                  |
 
+
 ### Modelo ML
+
 
 | Método | Rota                      | Descrição                                                                |
 | ------ | ------------------------- | ------------------------------------------------------------------------ |
@@ -291,6 +321,7 @@ Base URL: `http://localhost:3001/api`
 | `GET`  | `/model/learning-curve`   | Dados da curva de aprendizado (loss/accuracy por época)                  |
 | `GET`  | `/model/confusion-matrix` | Matrizes de confusão do ML e baseline                                    |
 | `GET`  | `/model/:filename`        | Serve arquivos de pesos (`.bin`) — rota sanitizada contra path traversal |
+
 
 ---
 
@@ -405,6 +436,7 @@ Total de parâmetros treináveis: 4.993
 
 ### Configuração de Treinamento
 
+
 | Parâmetro        | Valor                                                    |
 | ---------------- | -------------------------------------------------------- |
 | Optimizer        | Adam (learning rate = 0.001)                             |
@@ -414,6 +446,7 @@ Total de parâmetros treináveis: 4.993
 | Regularização    | L2 (λ = 0.001), Dropout (0.3 / 0.2), Batch Normalization |
 | Split do dataset | 70% treino / 15% validação / 15% teste                   |
 | Dataset          | 8.000 amostras (70% normal, 30% suspeito)                |
+
 
 ### Hyperparameter Tuning
 
@@ -428,6 +461,7 @@ A melhor configuração é selecionada pelo F1-Score médio entre os folds.
 
 ### Métricas Finais (Conjunto de Teste)
 
+
 | Métrica   | Modelo ML  | Baseline de Regras |
 | --------- | ---------- | ------------------ |
 | Accuracy  | 99.38%     | 84.25%             |
@@ -436,9 +470,11 @@ A melhor configuração é selecionada pelo F1-Score médio entre os folds.
 | F1-Score  | **99.37%** | **72.79%**         |
 | AUC-ROC   | 0.9998     | —                  |
 
+
 ### Baseline de Regras Estáticas (8 regras)
 
 O baseline implementa 8 heurísticas de segurança. Uma ação é classificada como **suspeita se 2 ou mais regras** forem ativadas simultaneamente:
+
 
 | #   | Regra                              | Threshold                        |
 | --- | ---------------------------------- | -------------------------------- |
@@ -451,6 +487,7 @@ O baseline implementa 8 heurísticas de segurança. Uma ação é classificada c
 | 7   | Acesso excessivo a dados sensíveis | > 20 acessos a módulos restritos |
 | 8   | Distância geográfica anômala       | > 100 km do local habitual       |
 
+
 ### Limitações
 
 > ⚠️ Os perfis de comportamento do **dataset sintético** possuem padrões bem definidos e separáveis por design. Em cenários reais, comportamentos legítimos e maliciosos tendem a se sobrepor de forma mais sutil, resultando em **métricas inferiores** às reportadas. Esta ressalva é fundamental para a seção de limitações da monografia.
@@ -460,6 +497,7 @@ O baseline implementa 8 heurísticas de segurança. Uma ação é classificada c
 ## 📊 Dashboard ML
 
 O dashboard apresenta 7 painéis interativos para monitoramento e análise:
+
 
 | Painel                   | Descrição                                                                                                                                                  |
 | ------------------------ | ---------------------------------------------------------------------------------------------------------------------------------------------------------- |
@@ -471,18 +509,19 @@ O dashboard apresenta 7 painéis interativos para monitoramento e análise:
 | **AnomalyChart**         | Gráfico de área mostrando score de risco médio e máximo ao longo do tempo                                                                                  |
 | **FeatureImportance**    | Gráfico de barras horizontal com as 15 features mais discriminantes entre comportamento normal e suspeito                                                  |
 
-> 📷 _Screenshots podem ser adicionados em versão futura da documentação._
+
+> 📷 *Screenshots podem ser adicionados em versão futura da documentação.*
 
 ---
 
 ## 📚 Referências Acadêmicas
 
-1. **Du, M., Li, F., Zheng, G., & Srikumar, V.** (2017). _DeepLog: Anomaly Detection and Diagnosis from System Logs through Deep Learning_. ACM CCS 2017.
-2. **Berlin, K., Slater, D., & Saxe, J.** (2015). _Malicious Behavior Detection using Windows Audit Logs_. ACM AISec Workshop.
-3. **Ranjan, R. & Kumar, S.S.** (2022). _User Behaviour Analysis using Data Analytics and Machine Learning to Identify Malicious User versus Legitimate User_. High Technology Letters, 28(1).
-4. **Jiang, J. et al.** (2018). _Anomaly Detection with Graph Convolutional Networks for Insider Threat and Fraud Detection_. IEEE MILCOM.
-5. **Bolt, A., de Leoni, M., & van der Aalst, W.M.P.** (2018). _Process Variant Comparison: Using Event Logs to Detect Differences in Behavior and Business Rules_. Information Systems, v. 74.
-6. **Danziger, M. & Henriques, M.A.A.** (2017). _Autonomic Computing Guided by Machine Learning to Counteract Security Threats in Information Systems_. XIV SBSEG.
+1. **Du, M., Li, F., Zheng, G., & Srikumar, V.** (2017). *DeepLog: Anomaly Detection and Diagnosis from System Logs through Deep Learning*. ACM CCS 2017.
+2. **Berlin, K., Slater, D., & Saxe, J.** (2015). *Malicious Behavior Detection using Windows Audit Logs*. ACM AISec Workshop.
+3. **Ranjan, R. & Kumar, S.S.** (2022). *User Behaviour Analysis using Data Analytics and Machine Learning to Identify Malicious User versus Legitimate User*. High Technology Letters, 28(1).
+4. **Jiang, J. et al.** (2018). *Anomaly Detection with Graph Convolutional Networks for Insider Threat and Fraud Detection*. IEEE MILCOM.
+5. **Bolt, A., de Leoni, M., & van der Aalst, W.M.P.** (2018). *Process Variant Comparison: Using Event Logs to Detect Differences in Behavior and Business Rules*. Information Systems, v. 74.
+6. **Danziger, M. & Henriques, M.A.A.** (2017). *Autonomic Computing Guided by Machine Learning to Counteract Security Threats in Information Systems*. XIV SBSEG.
 
 ---
 
@@ -520,3 +559,4 @@ SOFTWARE.
 
 - **Universidade Federal de Uberlândia (UFU)** — Faculdade de Computação, Campus Monte Carmelo
 - Desenvolvido como Trabalho de Conclusão de Curso para o Bacharelado em Sistemas de Informação
+

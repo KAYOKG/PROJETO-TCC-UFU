@@ -2,9 +2,10 @@ import LayersIcon from '@mui/icons-material/Layers';
 import Box from '@mui/material/Box';
 import Card from '@mui/material/Card';
 import CardContent from '@mui/material/CardContent';
+import Chip from '@mui/material/Chip';
 import Typography from '@mui/material/Typography';
 import { useMemo } from 'react';
-import { Bar, BarChart, CartesianGrid, ResponsiveContainer, Tooltip, XAxis, YAxis } from 'recharts';
+import { Bar, BarChart, CartesianGrid, Cell, ResponsiveContainer, Tooltip, XAxis, YAxis } from 'recharts';
 import { useMLStore } from '../../store/useMLStore';
 import { FEATURE_NAMES } from '../../types';
 
@@ -41,6 +42,12 @@ const FEATURE_LABELS: Record<string, string> = {
   isNewDevice: 'Novo Dispositivo',
 };
 
+const BAR_COLORS = [
+  '#1565c0', '#1976d2', '#1e88e5', '#2196f3', '#42a5f5',
+  '#64b5f6', '#90caf9', '#a5d6a7', '#81c784', '#66bb6a',
+  '#4caf50', '#43a047', '#388e3c', '#2e7d32', '#1b5e20',
+];
+
 export function FeatureImportance() {
   const predictions = useMLStore(state => state.predictions);
 
@@ -73,24 +80,44 @@ export function FeatureImportance() {
   return (
     <Card>
       <CardContent>
-        <Typography variant="h6" sx={{ display: 'flex', alignItems: 'center', gap: 1, mb: 2 }}>
-          <LayersIcon color="success" />
-          Importância das Features
-        </Typography>
+        <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', mb: 2, flexWrap: 'wrap', gap: 1 }}>
+          <Typography variant="h6" sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+            <LayersIcon color="success" />
+            Importância das Features
+          </Typography>
+          {importanceData.length > 0 && (
+            <Chip label={`Top ${importanceData.length} features`} size="small" variant="outlined" color="success" />
+          )}
+        </Box>
 
         {importanceData.length === 0 ? (
-          <Box sx={{ textAlign: 'center', py: 8, color: 'text.disabled' }}>
+          <Box sx={{
+            textAlign: 'center',
+            py: 6,
+            color: 'text.disabled',
+            border: '2px dashed',
+            borderColor: 'grey.200',
+            borderRadius: 3,
+          }}>
             <LayersIcon sx={{ fontSize: 48, mb: 1 }} />
             <Typography>Necessário ter predições normais e suspeitas</Typography>
+            <Typography variant="caption">O gráfico calcula a diferença média entre comportamento normal e suspeito</Typography>
           </Box>
         ) : (
-          <ResponsiveContainer width="100%" height={400}>
-            <BarChart data={importanceData} layout="vertical" margin={{ left: 120 }}>
-              <CartesianGrid strokeDasharray="3 3" />
+          <ResponsiveContainer width="100%" height={420}>
+            <BarChart data={importanceData} layout="vertical" margin={{ left: 130, right: 10 }}>
+              <CartesianGrid strokeDasharray="3 3" stroke="#eee" horizontal={false} />
               <XAxis type="number" domain={[0, 'auto']} fontSize={11} />
-              <YAxis dataKey="feature" type="category" fontSize={11} width={120} />
-              <Tooltip formatter={(value: number) => value.toFixed(4)} />
-              <Bar dataKey="importance" name="Importância" fill="#2e7d32" radius={[0, 4, 4, 0]} />
+              <YAxis dataKey="feature" type="category" fontSize={11} width={130} />
+              <Tooltip
+                formatter={(value: number) => value.toFixed(4)}
+                contentStyle={{ borderRadius: 8, boxShadow: '0 2px 8px rgba(0,0,0,0.12)' }}
+              />
+              <Bar dataKey="importance" name="Importância" radius={[0, 4, 4, 0]} barSize={18}>
+                {importanceData.map((_, i) => (
+                  <Cell key={i} fill={BAR_COLORS[i % BAR_COLORS.length]} />
+                ))}
+              </Bar>
             </BarChart>
           </ResponsiveContainer>
         )}
