@@ -13,7 +13,7 @@ import Skeleton from '@mui/material/Skeleton';
 import Typography from '@mui/material/Typography';
 import { useEffect, useState } from 'react';
 import {
-  Area, CartesianGrid, ComposedChart, Dot, Legend, Line, ReferenceDot,
+  Area, CartesianGrid, ComposedChart, Line, ReferenceDot,
   ReferenceLine, ResponsiveContainer, Tooltip, XAxis, YAxis,
 } from 'recharts';
 import { fetchLearningCurve } from '../../services/api';
@@ -210,7 +210,7 @@ export function LearningCurveChart() {
                 Quanto menor, melhor. Se validação diverge do treino, indica overfitting.
               </Typography>
               <ResponsiveContainer width="100%" height={300}>
-                <ComposedChart data={chartData} margin={{ top: 10, right: 15, left: 5, bottom: 35 }}>
+                <ComposedChart data={chartData} margin={{ top: 10, right: 15, left: 5, bottom: 20 }}>
                   <defs>
                     <linearGradient id="gradTrainLoss" x1="0" y1="0" x2="0" y2="1">
                       <stop offset="5%" stopColor="#1565c0" stopOpacity={0.15} />
@@ -225,13 +225,12 @@ export function LearningCurveChart() {
                   <XAxis
                     dataKey="epoch"
                     fontSize={11}
-                    label={{ value: 'Época', position: 'insideBottom', offset: -25, fontSize: 11, fill: '#666' }}
+                    label={{ value: 'Época', position: 'insideBottom', offset: -10, fontSize: 11, fill: '#666' }}
                   />
                   <YAxis fontSize={11} label={{ value: 'Loss', angle: -90, position: 'insideLeft', fontSize: 11, fill: '#666' }} />
                   <Tooltip contentStyle={tooltipStyle} />
-                  <Legend wrapperStyle={{ fontSize: 12, paddingTop: 4 }} />
-                  <Area type="monotone" dataKey="trainLoss" fill="url(#gradTrainLoss)" stroke="none" legendType="none" />
-                  <Area type="monotone" dataKey="valLoss" fill="url(#gradValLoss)" stroke="none" legendType="none" />
+                  <Area type="monotone" dataKey="trainLoss" fill="url(#gradTrainLoss)" stroke="none" />
+                  <Area type="monotone" dataKey="valLoss" fill="url(#gradValLoss)" stroke="none" />
                   <Line type="monotone" dataKey="trainLoss" name="Loss de Treino" stroke="#1565c0" strokeWidth={2.5} dot={false} activeDot={{ r: 4, fill: '#1565c0' }} />
                   <Line type="monotone" dataKey="valLoss" name="Loss de Validação" stroke="#d32f2f" strokeWidth={2} dot={false} strokeDasharray="6 3" activeDot={{ r: 4, fill: '#d32f2f' }} />
                   <ReferenceDot
@@ -253,6 +252,20 @@ export function LearningCurveChart() {
                   <ReferenceLine x={bestValLossEpoch} stroke="#2e7d32" strokeDasharray="3 3" strokeWidth={1} strokeOpacity={0.4} />
                 </ComposedChart>
               </ResponsiveContainer>
+              <Box sx={{ display: 'flex', gap: 2, justifyContent: 'center', mt: 1 }}>
+                <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.75 }}>
+                  <Box sx={{ width: 20, height: 3, bgcolor: '#1565c0', borderRadius: 1 }} />
+                  <Typography variant="caption">Loss de Treino</Typography>
+                </Box>
+                <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.75 }}>
+                  <Box sx={{ width: 20, height: 3, bgcolor: '#d32f2f', borderRadius: 1, backgroundImage: 'repeating-linear-gradient(90deg, #d32f2f 0, #d32f2f 4px, transparent 4px, transparent 7px)' }} />
+                  <Typography variant="caption">Loss de Validação</Typography>
+                </Box>
+                <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.75 }}>
+                  <Box sx={{ width: 10, height: 10, bgcolor: '#2e7d32', borderRadius: '50%' }} />
+                  <Typography variant="caption">Melhor Ponto</Typography>
+                </Box>
+              </Box>
             </Box>
           </Grid>
 
@@ -265,7 +278,7 @@ export function LearningCurveChart() {
                 Quanto maior, melhor. Curvas próximas indicam boa generalização.
               </Typography>
               <ResponsiveContainer width="100%" height={300}>
-                <ComposedChart data={chartData} margin={{ top: 10, right: 15, left: 5, bottom: 35 }}>
+                <ComposedChart data={chartData} margin={{ top: 10, right: 15, left: 5, bottom: 20 }}>
                   <defs>
                     <linearGradient id="gradTrainAcc" x1="0" y1="0" x2="0" y2="1">
                       <stop offset="5%" stopColor="#1565c0" stopOpacity={0.15} />
@@ -280,7 +293,7 @@ export function LearningCurveChart() {
                   <XAxis
                     dataKey="epoch"
                     fontSize={11}
-                    label={{ value: 'Época', position: 'insideBottom', offset: -25, fontSize: 11, fill: '#666' }}
+                    label={{ value: 'Época', position: 'insideBottom', offset: -10, fontSize: 11, fill: '#666' }}
                   />
                   <YAxis
                     fontSize={11}
@@ -292,9 +305,8 @@ export function LearningCurveChart() {
                     label={{ value: 'Acurácia', angle: -90, position: 'insideLeft', fontSize: 11, fill: '#666' }}
                   />
                   <Tooltip formatter={(v: number) => `${v.toFixed(2)}%`} contentStyle={tooltipStyle} />
-                  <Legend wrapperStyle={{ fontSize: 12, paddingTop: 4 }} />
-                  <Area type="monotone" dataKey="trainAcc" fill="url(#gradTrainAcc)" stroke="none" legendType="none" />
-                  <Area type="monotone" dataKey="valAcc" fill="url(#gradValAcc)" stroke="none" legendType="none" />
+                  <Area type="monotone" dataKey="trainAcc" fill="url(#gradTrainAcc)" stroke="none" />
+                  <Area type="monotone" dataKey="valAcc" fill="url(#gradValAcc)" stroke="none" />
                   <Line type="monotone" dataKey="trainAcc" name="Acurácia de Treino" stroke="#1565c0" strokeWidth={2.5} dot={false} activeDot={{ r: 4, fill: '#1565c0' }} />
                   <Line type="monotone" dataKey="valAcc" name="Acurácia de Validação" stroke="#d32f2f" strokeWidth={2} dot={false} strokeDasharray="6 3" activeDot={{ r: 4, fill: '#d32f2f' }} />
                   <ReferenceDot
@@ -316,6 +328,20 @@ export function LearningCurveChart() {
                   <ReferenceLine x={bestValAccEpoch} stroke="#6a1b9a" strokeDasharray="3 3" strokeWidth={1} strokeOpacity={0.4} />
                 </ComposedChart>
               </ResponsiveContainer>
+              <Box sx={{ display: 'flex', gap: 2, justifyContent: 'center', mt: 1 }}>
+                <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.75 }}>
+                  <Box sx={{ width: 20, height: 3, bgcolor: '#1565c0', borderRadius: 1 }} />
+                  <Typography variant="caption">Acurácia de Treino</Typography>
+                </Box>
+                <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.75 }}>
+                  <Box sx={{ width: 20, height: 3, bgcolor: '#d32f2f', borderRadius: 1, backgroundImage: 'repeating-linear-gradient(90deg, #d32f2f 0, #d32f2f 4px, transparent 4px, transparent 7px)' }} />
+                  <Typography variant="caption">Acurácia de Validação</Typography>
+                </Box>
+                <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.75 }}>
+                  <Box sx={{ width: 10, height: 10, bgcolor: '#6a1b9a', borderRadius: '50%' }} />
+                  <Typography variant="caption">Melhor Ponto</Typography>
+                </Box>
+              </Box>
             </Box>
           </Grid>
         </Grid>
