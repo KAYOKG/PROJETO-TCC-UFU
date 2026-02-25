@@ -1,24 +1,9 @@
 import { Request, Response, Router } from "express";
 import { getDb, saveDb } from "../db/connection.js";
+import { queryToObjects } from "../db/helpers.js";
 
 const router = Router();
 const BLOCK_DURATION_MS = 3 * 60 * 1000;
-
-function queryToObjects(
-  db: Awaited<ReturnType<typeof getDb>>,
-  sql: string,
-  params: unknown[] = [],
-) {
-  const results = db.exec(sql, params as number[] | string[]);
-  if (results.length === 0) return [];
-  return results[0].values.map((row) => {
-    const obj: Record<string, unknown> = {};
-    results[0].columns.forEach((col, i) => {
-      obj[col] = row[i];
-    });
-    return obj;
-  });
-}
 
 router.post("/", async (req: Request, res: Response) => {
   try {

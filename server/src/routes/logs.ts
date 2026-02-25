@@ -1,5 +1,5 @@
-import { Router, Request, Response } from 'express';
-import { getDb, saveDb } from '../db/connection.js';
+import { Request, Response, Router } from "express";
+import { getDb, saveDb } from "../db/connection.js";
 
 const router = Router();
 
@@ -47,16 +47,35 @@ interface LogBody {
 
 function logToParams(log: LogBody): unknown[] {
   return [
-    log.id, log.timestamp, log.userName, log.userId, log.accessLevel, log.action, log.details,
-    log.origin?.module ?? null, log.origin?.device ?? null, log.origin?.browser ?? null, log.origin?.ipAddress ?? null,
-    log.origin?.geolocation?.latitude ?? null, log.origin?.geolocation?.longitude ?? null,
-    log.origin?.geolocation?.city ?? null, log.origin?.geolocation?.state ?? null, log.origin?.geolocation?.country ?? null,
-    log.origin?.network?.type ?? null, log.origin?.network?.speed ?? null, log.origin?.network?.latency ?? 0,
-    log.session?.startTime ?? null, log.session?.loginAttempts ?? 0,
-    log.session?.lastActivity ?? null, log.session?.inactivityTime ?? 0,
-    log.result, log.interactionType ?? null,
-    log.elementInfo?.id ?? null, log.elementInfo?.className ?? null,
-    log.elementInfo?.text ?? null, log.elementInfo?.type ?? null,
+    log.id,
+    log.timestamp,
+    log.userName,
+    log.userId,
+    log.accessLevel,
+    log.action,
+    log.details,
+    log.origin?.module ?? null,
+    log.origin?.device ?? null,
+    log.origin?.browser ?? null,
+    log.origin?.ipAddress ?? null,
+    log.origin?.geolocation?.latitude ?? null,
+    log.origin?.geolocation?.longitude ?? null,
+    log.origin?.geolocation?.city ?? null,
+    log.origin?.geolocation?.state ?? null,
+    log.origin?.geolocation?.country ?? null,
+    log.origin?.network?.type ?? null,
+    log.origin?.network?.speed ?? null,
+    log.origin?.network?.latency ?? 0,
+    log.session?.startTime ?? null,
+    log.session?.loginAttempts ?? 0,
+    log.session?.lastActivity ?? null,
+    log.session?.inactivityTime ?? 0,
+    log.result,
+    log.interactionType ?? null,
+    log.elementInfo?.id ?? null,
+    log.elementInfo?.className ?? null,
+    log.elementInfo?.text ?? null,
+    log.elementInfo?.type ?? null,
   ];
 }
 
@@ -72,7 +91,7 @@ const INSERT_SQL = `
   ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
 `;
 
-router.post('/', async (req: Request, res: Response) => {
+router.post("/", async (req: Request, res: Response) => {
   try {
     const log: LogBody = req.body;
     const db = await getDb();
@@ -80,14 +99,23 @@ router.post('/', async (req: Request, res: Response) => {
     saveDb();
     res.status(201).json({ success: true, id: log.id });
   } catch (error) {
-    console.error('Error saving log:', error);
-    res.status(500).json({ error: 'Failed to save log' });
+    console.error("Error saving log:", error);
+    res.status(500).json({ error: "Failed to save log" });
   }
 });
 
-router.post('/batch', async (req: Request, res: Response) => {
+const MAX_BATCH_LOGS = 100;
+
+router.post("/batch", async (req: Request, res: Response) => {
   try {
     const logs: LogBody[] = req.body;
+    if (!Array.isArray(logs) || logs.length > MAX_BATCH_LOGS) {
+      res.status(400).json({
+        error: `Batch must be an array with at most ${MAX_BATCH_LOGS} items`,
+        max: MAX_BATCH_LOGS,
+      });
+      return;
+    }
     const db = await getDb();
     for (const log of logs) {
       db.run(INSERT_SQL, logToParams(log));
@@ -95,60 +123,76 @@ router.post('/batch', async (req: Request, res: Response) => {
     saveDb();
     res.status(201).json({ success: true, count: logs.length });
   } catch (error) {
-    console.error('Error saving logs batch:', error);
-    res.status(500).json({ error: 'Failed to save logs batch' });
+    console.error("Error saving logs batch:", error);
+    res.status(500).json({ error: "Failed to save logs batch" });
   }
 });
 
-router.get('/', async (req: Request, res: Response) => {
+const MAX_LOGS_LIMIT = 500;
+
+router.get("/", async (req: Request, res: Response) => {
   try {
     const db = await getDb();
-    const { userId, limit = '100', offset = '0', startDate, endDate } = req.query;
+    const {
+      userId,
+      limit = "100",
+      offset = "0",
+      startDate,
+      endDate,
+    } = req.query;
 
-    let query = 'SELECT * FROM system_logs WHERE 1=1';
+    const limitNum = Math.min(Math.max(1, Number(limit) || 50), MAX_LOGS_LIMIT);
+    const offsetNum = Math.max(0, Number(offset) || 0);
+
+    let query = "SELECT * FROM system_logs WHERE 1=1";
     const params: unknown[] = [];
 
     if (userId) {
-      query += ' AND user_id = ?';
+      query += " AND user_id = ?";
       params.push(userId as string);
     }
     if (startDate) {
-      query += ' AND timestamp >= ?';
+      query += " AND timestamp >= ?";
       params.push(startDate as string);
     }
     if (endDate) {
-      query += ' AND timestamp <= ?';
+      query += " AND timestamp <= ?";
       params.push(endDate as string);
     }
 
-    query += ' ORDER BY timestamp DESC LIMIT ? OFFSET ?';
-    params.push(Number(limit), Number(offset));
+    query += " ORDER BY timestamp DESC LIMIT ? OFFSET ?";
+    params.push(limitNum, offsetNum);
 
     const results = db.exec(query, params);
-    const logs = results.length > 0
-      ? results[0].values.map(row => {
-          const obj: Record<string, unknown> = {};
-          results[0].columns.forEach((col, i) => { obj[col] = row[i]; });
-          return obj;
-        })
-      : [];
+    const logs =
+      results.length > 0
+        ? results[0].values.map((row) => {
+            const obj: Record<string, unknown> = {};
+            results[0].columns.forEach((col, i) => {
+              obj[col] = row[i];
+            });
+            return obj;
+          })
+        : [];
 
-    const countQuery = 'SELECT COUNT(*) as total FROM system_logs WHERE 1=1'
-      + (userId ? ' AND user_id = ?' : '')
-      + (startDate ? ' AND timestamp >= ?' : '')
-      + (endDate ? ' AND timestamp <= ?' : '');
+    const countQuery =
+      "SELECT COUNT(*) as total FROM system_logs WHERE 1=1" +
+      (userId ? " AND user_id = ?" : "") +
+      (startDate ? " AND timestamp >= ?" : "") +
+      (endDate ? " AND timestamp <= ?" : "");
     const countParams = params.slice(0, -2);
     const countResult = db.exec(countQuery, countParams);
-    const total = countResult.length > 0 ? (countResult[0].values[0][0] as number) : 0;
+    const total =
+      countResult.length > 0 ? (countResult[0].values[0][0] as number) : 0;
 
-    res.json({ logs, total, limit: Number(limit), offset: Number(offset) });
+    res.json({ logs, total, limit: limitNum, offset: offsetNum });
   } catch (error) {
-    console.error('Error fetching logs:', error);
-    res.status(500).json({ error: 'Failed to fetch logs' });
+    console.error("Error fetching logs:", error);
+    res.status(500).json({ error: "Failed to fetch logs" });
   }
 });
 
-router.get('/stats', async (_req: Request, res: Response) => {
+router.get("/stats", async (_req: Request, res: Response) => {
   try {
     const db = await getDb();
 
@@ -157,31 +201,45 @@ router.get('/stats', async (_req: Request, res: Response) => {
       return r.length > 0 ? r[0] : null;
     };
 
-    const totalResult = execSingle('SELECT COUNT(*) FROM system_logs');
+    const totalResult = execSingle("SELECT COUNT(*) FROM system_logs");
     const totalLogs = totalResult ? (totalResult.values[0][0] as number) : 0;
 
-    const usersResult = execSingle('SELECT COUNT(DISTINCT user_id) FROM system_logs');
+    const usersResult = execSingle(
+      "SELECT COUNT(DISTINCT user_id) FROM system_logs",
+    );
     const uniqueUsers = usersResult ? (usersResult.values[0][0] as number) : 0;
 
-    const actionResult = execSingle('SELECT action, COUNT(*) as count FROM system_logs GROUP BY action ORDER BY count DESC LIMIT 20');
+    const actionResult = execSingle(
+      "SELECT action, COUNT(*) as count FROM system_logs GROUP BY action ORDER BY count DESC LIMIT 20",
+    );
     const actionBreakdown = actionResult
-      ? actionResult.values.map(r => ({ action: r[0], count: r[1] }))
+      ? actionResult.values.map((r) => ({ action: r[0], count: r[1] }))
       : [];
 
-    const moduleResult = execSingle('SELECT module, COUNT(*) as count FROM system_logs GROUP BY module ORDER BY count DESC');
+    const moduleResult = execSingle(
+      "SELECT module, COUNT(*) as count FROM system_logs GROUP BY module ORDER BY count DESC",
+    );
     const moduleBreakdown = moduleResult
-      ? moduleResult.values.map(r => ({ module: r[0], count: r[1] }))
+      ? moduleResult.values.map((r) => ({ module: r[0], count: r[1] }))
       : [];
 
     const errorResult = execSingle(
-      `SELECT ROUND(CAST(SUM(CASE WHEN result = 'error' THEN 1 ELSE 0 END) AS REAL) / MAX(COUNT(*), 1) * 100, 2) FROM system_logs`
+      `SELECT ROUND(CAST(SUM(CASE WHEN result = 'error' THEN 1 ELSE 0 END) AS REAL) / MAX(COUNT(*), 1) * 100, 2) FROM system_logs`,
     );
-    const errorRate = errorResult ? (errorResult.values[0][0] as number) ?? 0 : 0;
+    const errorRate = errorResult
+      ? ((errorResult.values[0][0] as number) ?? 0)
+      : 0;
 
-    res.json({ totalLogs, uniqueUsers, actionBreakdown, moduleBreakdown, errorRate });
+    res.json({
+      totalLogs,
+      uniqueUsers,
+      actionBreakdown,
+      moduleBreakdown,
+      errorRate,
+    });
   } catch (error) {
-    console.error('Error fetching stats:', error);
-    res.status(500).json({ error: 'Failed to fetch stats' });
+    console.error("Error fetching stats:", error);
+    res.status(500).json({ error: "Failed to fetch stats" });
   }
 });
 

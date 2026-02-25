@@ -8,6 +8,7 @@ import {
   reportPrediction,
 } from "../services/api";
 import { MLPrediction, RiskAlert, SystemLog, TrainingMetrics } from "../types";
+import { useApiErrorStore } from "./useApiErrorStore";
 import { useAuthStore } from "./useAuthStore";
 import { useBlockStore } from "./useBlockStore";
 
@@ -20,6 +21,8 @@ interface MLState {
   modelError: string | null;
   threshold: number;
   userRiskScores: Map<string, number>;
+  /** Evita race: só uma análise por userId por vez */
+  isAnalyzingByUser: Map<string, boolean>;
   alertsSummary: {
     userRisks: Record<string, unknown>[];
     alertsByType: Record<string, unknown>[];
@@ -46,6 +49,7 @@ export const useMLStore = create<MLState>((set, get) => ({
   modelError: null,
   threshold: 0.7,
   userRiskScores: new Map(),
+  isAnalyzingByUser: new Map(),
   alertsSummary: null,
 
   initializeModel: async () => {
@@ -64,7 +68,11 @@ export const useMLStore = create<MLState>((set, get) => ({
         } else {
           const msg =
             err instanceof Error ? err.message : "Falha ao carregar modelo";
-          console.warn(`Model load failed after ${MAX_RETRIES} attempts:`, msg);
+          if (import.meta.env.DEV)
+            console.warn(
+              `Model load failed after ${MAX_RETRIES} attempts:`,
+              msg,
+            );
           set({ modelLoading: false, modelError: msg });
         }
       }
@@ -96,91 +104,109 @@ export const useMLStore = create<MLState>((set, get) => ({
     )
       return;
 
-    const { threshold } = get();
+    // Mutex por userId: evita análise duplicada e incidentes duplicados
+    const userId = log.userId;
+    if (get().isAnalyzingByUser.get(userId)) return;
+    set((state) => ({
+      isAnalyzingByUser: new Map(state.isAnalyzingByUser).set(userId, true),
+    }));
 
-    // ML prediction
-    let mlPrediction: MLPrediction | null = null;
-    if (isModelLoaded()) {
-      mlPrediction = await classifyLog(log, recentLogs, threshold);
-    }
+    try {
+      const { threshold } = get();
 
-    // Rules baseline
-    const rulesResult = applyStaticRules(log, recentLogs);
+      // ML prediction
+      let mlPrediction: MLPrediction | null = null;
+      if (isModelLoaded()) {
+        mlPrediction = await classifyLog(log, recentLogs, threshold);
+      }
 
-    if (mlPrediction) {
-      reportPrediction({
-        userId: log.userId,
-        riskScore: mlPrediction.riskScore,
-        logId: log.id,
-      }).catch(() => {});
+      // Rules baseline
+      const rulesResult = applyStaticRules(log, recentLogs);
 
-      set((state) => {
-        const predictions = [mlPrediction, ...state.predictions].slice(0, 500);
+      if (mlPrediction) {
+        reportPrediction({
+          userId: log.userId,
+          riskScore: mlPrediction.riskScore,
+          logId: log.id,
+        }).catch(() => {});
 
-        const userRiskScores = new Map(state.userRiskScores);
-        const currentScore = userRiskScores.get(log.userId) ?? 0;
-        const newScore = currentScore * 0.8 + mlPrediction.riskScore * 0.2;
-        userRiskScores.set(log.userId, newScore);
+        set((state) => {
+          const predictions = [mlPrediction, ...state.predictions].slice(
+            0,
+            500,
+          );
 
-        const newAlerts = [...state.alerts];
+          const userRiskScores = new Map(state.userRiskScores);
+          const currentScore = userRiskScores.get(log.userId) ?? 0;
+          const newScore = currentScore * 0.8 + mlPrediction.riskScore * 0.2;
+          userRiskScores.set(log.userId, newScore);
 
-        if (mlPrediction.isSuspicious) {
-          newAlerts.unshift({
-            id: Date.now(),
-            logId: log.id,
-            userId: log.userId,
-            userName: log.userName,
-            riskScore: mlPrediction.riskScore,
-            alertType: mlPrediction.alertType ?? "Anomalous Behavior",
-            description: `ML detectou comportamento suspeito: ${log.action} (score: ${mlPrediction.riskScore.toFixed(3)})`,
-            isMlDetection: true,
-            createdAt: new Date().toISOString(),
-          });
-          createIncident({
-            logId: log.id,
-            userId: log.userId,
-            userName: log.userName,
-            action: log.action,
-            details: log.details ?? "",
-            riskScore: mlPrediction.riskScore,
-            mlPrediction: mlPrediction.riskScore,
-            featureVector: mlPrediction.featureVector,
-          })
-            .then((body) => {
-              // SuperAdmin nunca é suspenso: só recebe alertas
-              if (useAuthStore.getState().user?.role === "superadmin") return;
-              useBlockStore.getState().setBlocked({
-                blockedUntil:
-                  body.blocked_until ??
-                  new Date(Date.now() + 3 * 60 * 1000).toISOString(),
-                reason:
-                  body.reason ??
-                  "Atividade incomum detectada. Aguarde revisão.",
-                status: "timeout",
-              });
+          const newAlerts = [...state.alerts];
+
+          if (mlPrediction.isSuspicious) {
+            newAlerts.unshift({
+              id: Date.now(),
+              logId: log.id,
+              userId: log.userId,
+              userName: log.userName,
+              riskScore: mlPrediction.riskScore,
+              alertType: mlPrediction.alertType ?? "Anomalous Behavior",
+              description: `ML detectou comportamento suspeito: ${log.action} (score: ${mlPrediction.riskScore.toFixed(3)})`,
+              isMlDetection: true,
+              createdAt: new Date().toISOString(),
+            });
+            createIncident({
+              logId: log.id,
+              userId: log.userId,
+              userName: log.userName,
+              action: log.action,
+              details: log.details ?? "",
+              riskScore: mlPrediction.riskScore,
+              mlPrediction: mlPrediction.riskScore,
+              featureVector: mlPrediction.featureVector,
             })
-            .catch(() => {});
-        }
+              .then((body) => {
+                useApiErrorStore.getState().resetApiErrorCount();
+                if (useAuthStore.getState().user?.role === "superadmin") return;
+                useBlockStore.getState().setBlocked({
+                  blockedUntil:
+                    body.blocked_until ??
+                    new Date(Date.now() + 3 * 60 * 1000).toISOString(),
+                  reason:
+                    body.reason ??
+                    "Atividade incomum detectada. Aguarde revisão.",
+                  status: "timeout",
+                });
+              })
+              .catch(() => useApiErrorStore.getState().incrementApiError());
+          }
 
-        if (rulesResult.isSuspicious) {
-          newAlerts.unshift({
-            id: Date.now() + 1,
-            logId: log.id,
-            userId: log.userId,
-            userName: log.userName,
-            riskScore: rulesResult.score,
-            alertType: "Rule Violation",
-            description: `Regras: ${rulesResult.rules.join("; ")}`,
-            isMlDetection: false,
-            createdAt: new Date().toISOString(),
-          });
-        }
+          if (rulesResult.isSuspicious) {
+            newAlerts.unshift({
+              id: Date.now() + 1,
+              logId: log.id,
+              userId: log.userId,
+              userName: log.userName,
+              riskScore: rulesResult.score,
+              alertType: "Rule Violation",
+              description: `Regras: ${rulesResult.rules.join("; ")}`,
+              isMlDetection: false,
+              createdAt: new Date().toISOString(),
+            });
+          }
 
-        return {
-          predictions,
-          alerts: newAlerts.slice(0, 200),
-          userRiskScores,
-        };
+          return {
+            predictions,
+            alerts: newAlerts.slice(0, 200),
+            userRiskScores,
+          };
+        });
+      }
+    } finally {
+      set((state) => {
+        const next = new Map(state.isAnalyzingByUser);
+        next.delete(userId);
+        return { isAnalyzingByUser: next };
       });
     }
   },

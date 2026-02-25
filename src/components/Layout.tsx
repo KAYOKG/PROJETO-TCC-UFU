@@ -29,6 +29,7 @@ import Typography from '@mui/material/Typography';
 import { useEffect, useRef, useState } from 'react';
 import { useLocation, useNavigate } from 'react-router-dom';
 import { getIncidents } from '../services/api';
+import { useApiErrorStore } from '../store/useApiErrorStore';
 import { useAuthStore } from '../store/useAuthStore';
 
 const DRAWER_WIDTH = 260;
@@ -55,6 +56,7 @@ export function Layout({ children }: LayoutProps) {
   const navigate = useNavigate();
   const role = useAuthStore((s) => s.user?.role);
   const isSuperAdmin = role === 'superadmin';
+  const apiErrorsTooMany = useApiErrorStore((s) => s.hasTooManyErrors());
 
   const navItems = isSuperAdmin
     ? [...BASE_NAV_ITEMS, { label: 'Gestão de Incidentes', path: '/admin/incidents', icon: AssignmentIndIcon }]
@@ -163,6 +165,11 @@ export function Layout({ children }: LayoutProps) {
             </Link>
             <Typography color="text.primary" fontWeight={500}>{activeItem.label}</Typography>
           </Breadcrumbs>
+          {apiErrorsTooMany && (
+            <Alert severity="warning" sx={{ py: 0, px: 1.5, mr: 1 }} variant="filled">
+              Problemas de comunicação com o servidor
+            </Alert>
+          )}
           {isSuperAdmin && (
             <IconButton color="inherit" onClick={() => navigate('/admin/incidents')} aria-label="Incidentes pendentes">
               <Badge badgeContent={pendingCount} color="error">

@@ -50,7 +50,7 @@ export const GeolocationProvider: React.FC<{ children: React.ReactNode }> = ({ c
         const v6 = ipv6.status === 'fulfilled' ? ipv6.value : undefined;
         updateIpAddresses({ ipv4: v4, ipv6: v6 });
       } catch (error) {
-        console.warn('Failed to fetch IP addresses:', error);
+        if (import.meta.env.DEV) console.warn('Failed to fetch IP addresses:', error);
         updateIpAddresses({});
       }
     };
@@ -58,11 +58,11 @@ export const GeolocationProvider: React.FC<{ children: React.ReactNode }> = ({ c
     fetchIps();
   }, [updateIpAddresses]);
 
-  if (!isGeolocationAvailable) {
+  if (import.meta.env.DEV && !isGeolocationAvailable) {
     console.warn('Geolocation is not supported by your browser');
   }
 
-  if (!isGeolocationEnabled) {
+  if (import.meta.env.DEV && !isGeolocationEnabled) {
     console.warn('Geolocation permissions not granted');
   }
 

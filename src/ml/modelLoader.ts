@@ -26,10 +26,10 @@ export async function loadModel(): Promise<tf.LayersModel> {
   try {
     const modelUrl = getModelUrl();
     model = await tf.loadLayersModel(modelUrl);
-    console.log("ML model loaded successfully");
+    if (import.meta.env.DEV) console.log("ML model loaded successfully");
     return model;
   } catch (error) {
-    console.warn("Failed to load ML model:", error);
+    if (import.meta.env.DEV) console.warn("Failed to load ML model:", error);
     throw error;
   } finally {
     loading = false;
@@ -62,7 +62,8 @@ export async function getFeatureStats(): Promise<FeatureStats[]> {
       return featureStats;
     }
   } catch (error) {
-    console.warn("Failed to load feature stats from API:", error);
+    if (import.meta.env.DEV)
+      console.warn("Failed to load feature stats from API:", error);
   }
 
   return FEATURE_NAMES.map((name) => ({

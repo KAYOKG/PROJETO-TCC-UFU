@@ -1,25 +1,8 @@
 import { Request, Response, Router } from "express";
 import { getDb, saveDb } from "../db/connection.js";
+import { queryToObjects } from "../db/helpers.js";
 
 const router = Router();
-
-function queryToObjects(
-  db: Awaited<ReturnType<typeof getDb>>,
-  sql: string,
-  params?: unknown[],
-) {
-  const results = params
-    ? db.exec(sql, params as number[] | string[])
-    : db.exec(sql);
-  if (results.length === 0) return [];
-  return results[0].values.map((row) => {
-    const obj: Record<string, unknown> = {};
-    results[0].columns.forEach((col, i) => {
-      obj[col] = row[i];
-    });
-    return obj;
-  });
-}
 
 router.get("/:userId", async (req: Request, res: Response) => {
   try {
@@ -55,11 +38,21 @@ router.get("/:userId", async (req: Request, res: Response) => {
       return;
     }
 
+    const invalidations = queryToObjects(
+      db,
+      `SELECT 1 FROM session_invalidations WHERE user_id = ?`,
+      [userId],
+    );
+    const sessionInvalidated = invalidations.length > 0;
+    const responseStatus = sessionInvalidated
+      ? "confirmed_threat"
+      : block.status;
+
     res.json({
       blocked: true,
       blockedUntil: block.blocked_until ?? undefined,
       reason: block.reason ?? undefined,
-      status: block.status,
+      status: responseStatus,
     });
   } catch (error) {
     console.error("Error checking user block:", error);

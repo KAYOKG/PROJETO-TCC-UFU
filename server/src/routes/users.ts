@@ -1,27 +1,10 @@
 import { Request, Response, Router } from "express";
 import { getDb, saveDb } from "../db/connection.js";
+import { queryToObjects } from "../db/helpers.js";
 
 const router = Router();
 const COMMON_USER_IDS = ["user1", "user2"];
 const LAST_N_PREDICTIONS = 20;
-
-function queryToObjects(
-  db: Awaited<ReturnType<typeof getDb>>,
-  sql: string,
-  params?: unknown[],
-) {
-  const results = params
-    ? db.exec(sql, params as number[] | string[])
-    : db.exec(sql);
-  if (results.length === 0) return [];
-  return results[0].values.map((row) => {
-    const obj: Record<string, unknown> = {};
-    results[0].columns.forEach((col, i) => {
-      obj[col] = row[i];
-    });
-    return obj;
-  });
-}
 
 /** Média ponderada: últimas N predições, mais peso às recentes (índice 0 = mais recente) */
 function weightedAverage(scores: number[]): number {

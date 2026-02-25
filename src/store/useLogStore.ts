@@ -1,6 +1,7 @@
 import { create } from "zustand";
 import { persistLog } from "../services/api";
 import { SystemLog, UserSession } from "../types";
+import { useApiErrorStore } from "./useApiErrorStore";
 import { useMLStore } from "./useMLStore";
 
 interface LogState {
@@ -158,7 +159,9 @@ export const useLogStore = create<LogState>((set, get) => {
         },
       }));
 
-      persistLog(newLog);
+      persistLog(newLog)
+        .then(() => useApiErrorStore.getState().resetApiErrorCount())
+        .catch(() => useApiErrorStore.getState().incrementApiError());
 
       useMLStore.getState().analyzeLog(newLog, previousLogs);
     },

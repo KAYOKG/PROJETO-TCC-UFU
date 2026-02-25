@@ -3,29 +3,12 @@ import fs from "fs";
 import path from "path";
 import { fileURLToPath } from "url";
 import { getDb } from "../db/connection.js";
+import { queryToObjects } from "../db/helpers.js";
 import { NUM_FEATURES } from "../ml/featureEngineering.js";
 import { runTraining, type DatasetSample } from "../ml/trainer.js";
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const router = Router();
-
-function queryToObjects(
-  db: Awaited<ReturnType<typeof getDb>>,
-  sql: string,
-  params?: unknown[],
-) {
-  const results = params
-    ? db.exec(sql, params as number[] | string[])
-    : db.exec(sql);
-  if (results.length === 0) return [];
-  return results[0].values.map((row) => {
-    const obj: Record<string, unknown> = {};
-    results[0].columns.forEach((col, i) => {
-      obj[col] = row[i];
-    });
-    return obj;
-  });
-}
 
 router.get("/feedback-stats", async (_req: Request, res: Response) => {
   try {

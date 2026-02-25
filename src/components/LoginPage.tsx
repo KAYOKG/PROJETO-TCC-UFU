@@ -1,5 +1,6 @@
 import Box from '@mui/material/Box';
 import Button from '@mui/material/Button';
+import CircularProgress from '@mui/material/CircularProgress';
 import Paper from '@mui/material/Paper';
 import TextField from '@mui/material/TextField';
 import Typography from '@mui/material/Typography';
@@ -13,23 +14,29 @@ export function LoginPage() {
   const [username, setUsername] = useState('');
   const [password, setPassword] = useState('');
   const [error, setError] = useState('');
+  const [isLoading, setIsLoading] = useState(false);
   const login = useAuthStore((s) => s.login);
   const navigate = useNavigate();
   const location = useLocation();
   const sessionEndedMessage = (location.state as { message?: string })?.message;
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setError('');
-    if (login(username, password)) {
-      const user = useAuthStore.getState().user;
-      if (user) {
-        useLogStore.getState().updateSession({ userName: user.userName, userId: user.userId });
-        clearSessionInvalidation(user.userId).catch(() => { });
+    setIsLoading(true);
+    try {
+      if (login(username, password)) {
+        const user = useAuthStore.getState().user;
+        if (user) {
+          useLogStore.getState().updateSession({ userName: user.userName, userId: user.userId });
+          await clearSessionInvalidation(user.userId);
+        }
+        navigate('/', { replace: true });
+      } else {
+        setError('Usuário ou senha inválidos.');
       }
-      navigate('/', { replace: true });
-    } else {
-      setError('Usuário ou senha inválidos.');
+    } finally {
+      setIsLoading(false);
     }
   };
 
@@ -84,9 +91,11 @@ export function LoginPage() {
             type="submit"
             fullWidth
             variant="contained"
+            disabled={isLoading}
             sx={{ mt: 3 }}
+            startIcon={isLoading ? <CircularProgress size={20} color="inherit" /> : null}
           >
-            Entrar
+            {isLoading ? 'Entrando...' : 'Entrar'}
           </Button>
         </form>
       </Paper>

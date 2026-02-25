@@ -1,6 +1,6 @@
 import type { Incident, ResolveDecision, SystemLog } from "../types";
 
-const API_BASE = "http://localhost:3001/api";
+const API_BASE = import.meta.env.VITE_API_BASE ?? "http://localhost:3001/api";
 
 function serializeLog(log: SystemLog) {
   return {
@@ -24,15 +24,12 @@ function serializeLog(log: SystemLog) {
 }
 
 export async function persistLog(log: SystemLog): Promise<void> {
-  try {
-    await fetch(`${API_BASE}/logs`, {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify(serializeLog(log)),
-    });
-  } catch {
-    // Silently fail - logs are still kept in memory
-  }
+  const res = await fetch(`${API_BASE}/logs`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify(serializeLog(log)),
+  });
+  if (!res.ok) throw new Error("Failed to persist log");
 }
 
 export async function persistLogsBatch(logs: SystemLog[]): Promise<void> {
@@ -170,17 +167,21 @@ export async function reportPrediction(body: {
     headers: { "Content-Type": "application/json" },
     body: JSON.stringify(body),
   });
-  if (!res.ok) return;
+  if (!res.ok) throw new Error("Failed to report prediction");
 }
 
 export async function getSessionStatus(
   userId: string,
 ): Promise<{ valid: boolean }> {
-  const res = await fetch(
-    `${API_BASE}/users/${encodeURIComponent(userId)}/session-status`,
-  );
-  if (!res.ok) return { valid: true };
-  return res.json();
+  try {
+    const res = await fetch(
+      `${API_BASE}/users/${encodeURIComponent(userId)}/session-status`,
+    );
+    if (!res.ok) return { valid: false };
+    return res.json();
+  } catch {
+    return { valid: false };
+  }
 }
 
 export async function clearSessionInvalidation(userId: string): Promise<void> {

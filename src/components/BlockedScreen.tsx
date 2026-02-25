@@ -1,6 +1,6 @@
 import Box from '@mui/material/Box';
 import Typography from '@mui/material/Typography';
-import { useEffect, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { getSessionStatus, getUserBlock } from '../services/api';
 import { useAuthStore } from '../store/useAuthStore';
@@ -9,6 +9,9 @@ import { useBlockStore } from '../store/useBlockStore';
 const POLL_INTERVAL_MS = 10_000;
 const SESSION_ENDED_MESSAGE =
   "Sua sessão foi encerrada pelo administrador devido a atividade suspeita.";
+const CONFIRMED_THREAT_MESSAGE =
+  "Seu acesso foi suspenso pelo administrador.";
+const CONFIRMED_THREAT_DELAY_MS = 4000;
 
 function Countdown({ blockedUntil }: { blockedUntil: string }) {
   const [secondsLeft, setSecondsLeft] = useState(() => {
@@ -39,15 +42,36 @@ function Countdown({ blockedUntil }: { blockedUntil: string }) {
 }
 
 export function BlockedScreen() {
-  const { blocked, blockedUntil, reason, status, clearBlocked } = useBlockStore();
+  const { blocked, blockedUntil, reason, status, clearBlocked, setBlocked } = useBlockStore();
   const userId = useAuthStore((s) => s.user?.userId);
   const role = useAuthStore((s) => s.user?.role);
   const navigate = useNavigate();
-  const [polling, setPolling] = useState(false);
+  const intervalRef = useRef<ReturnType<typeof setInterval> | null>(null);
+  const redirectScheduledRef = useRef(false);
 
   useEffect(() => {
     if (!userId || !blocked) return;
-    setPolling(true);
+
+    const scheduleRedirect = () => {
+      if (redirectScheduledRef.current) return;
+      redirectScheduledRef.current = true;
+      if (intervalRef.current) {
+        clearInterval(intervalRef.current);
+        intervalRef.current = null;
+      }
+      const currentUntil = useBlockStore.getState().blockedUntil;
+      setBlocked({
+        blockedUntil: currentUntil ?? new Date(Date.now() + 5000).toISOString(),
+        reason: CONFIRMED_THREAT_MESSAGE,
+        status: "confirmed_threat",
+      });
+      setTimeout(() => {
+        clearBlocked();
+        useAuthStore.getState().logout();
+        navigate("/login", { replace: true, state: { message: SESSION_ENDED_MESSAGE } });
+      }, CONFIRMED_THREAT_DELAY_MS);
+    };
+
     const poll = async () => {
       try {
         const [blockData, sessionData] = await Promise.all([
@@ -55,9 +79,11 @@ export function BlockedScreen() {
           getSessionStatus(userId),
         ]);
         if (!sessionData.valid) {
-          clearBlocked();
-          useAuthStore.getState().logout();
-          navigate("/login", { replace: true, state: { message: SESSION_ENDED_MESSAGE } });
+          scheduleRedirect();
+          return;
+        }
+        if (blockData.blocked && blockData.status === "confirmed_threat") {
+          scheduleRedirect();
           return;
         }
         if (!blockData.blocked) {
@@ -68,12 +94,12 @@ export function BlockedScreen() {
       }
     };
     poll();
-    const id = setInterval(poll, POLL_INTERVAL_MS);
+    intervalRef.current = setInterval(poll, POLL_INTERVAL_MS);
     return () => {
-      clearInterval(id);
-      setPolling(false);
+      if (intervalRef.current) clearInterval(intervalRef.current);
+      intervalRef.current = null;
     };
-  }, [userId, blocked, clearBlocked, navigate]);
+  }, [userId, blocked, clearBlocked, setBlocked, navigate]);
 
   // SuperAdmin nunca é suspenso: pode receber alertas, mas a tela de bloqueio não é exibida
   if (role === "superadmin") return null;
@@ -115,8 +141,12 @@ export function BlockedScreen() {
         </>
       )}
       {status === 'confirmed_threat' && (
-        <Typography color="text.secondary" align="center" sx={{ maxWidth: 400 }}>
-          Seu acesso foi suspenso. Contate o administrador.
+        <Typography
+          component="p"
+          align="center"
+          sx={{ maxWidth: 400, color: 'error.light', fontWeight: 600 }}
+        >
+          Seu acesso foi suspenso pelo administrador.
         </Typography>
       )}
     </Box>
