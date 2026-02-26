@@ -45,37 +45,47 @@ interface LogBody {
   };
 }
 
-function logToParams(log: LogBody): unknown[] {
+/** sql.js aceita apenas string, number ou null no bind; objetos geram "Wrong API use". */
+function toBindable(value: unknown): string | number | null {
+  if (value === null || value === undefined) return null;
+  if (typeof value === "number" && !Number.isNaN(value)) return value;
+  if (typeof value === "string") return value;
+  if (typeof value === "boolean") return value ? 1 : 0;
+  if (typeof value === "object") return JSON.stringify(value);
+  return String(value);
+}
+
+function logToParams(log: LogBody): (string | number | null)[] {
   return [
-    log.id,
-    log.timestamp,
-    log.userName,
-    log.userId,
-    log.accessLevel,
-    log.action,
-    log.details,
-    log.origin?.module ?? null,
-    log.origin?.device ?? null,
-    log.origin?.browser ?? null,
-    log.origin?.ipAddress ?? null,
-    log.origin?.geolocation?.latitude ?? null,
-    log.origin?.geolocation?.longitude ?? null,
-    log.origin?.geolocation?.city ?? null,
-    log.origin?.geolocation?.state ?? null,
-    log.origin?.geolocation?.country ?? null,
-    log.origin?.network?.type ?? null,
-    log.origin?.network?.speed ?? null,
-    log.origin?.network?.latency ?? 0,
-    log.session?.startTime ?? null,
-    log.session?.loginAttempts ?? 0,
-    log.session?.lastActivity ?? null,
-    log.session?.inactivityTime ?? 0,
-    log.result,
-    log.interactionType ?? null,
-    log.elementInfo?.id ?? null,
-    log.elementInfo?.className ?? null,
-    log.elementInfo?.text ?? null,
-    log.elementInfo?.type ?? null,
+    toBindable(log.id),
+    toBindable(log.timestamp),
+    toBindable(log.userName),
+    toBindable(log.userId),
+    toBindable(log.accessLevel),
+    toBindable(log.action),
+    toBindable(log.details),
+    toBindable(log.origin?.module ?? null),
+    toBindable(log.origin?.device ?? null),
+    toBindable(log.origin?.browser ?? null),
+    toBindable(log.origin?.ipAddress ?? null),
+    toBindable(log.origin?.geolocation?.latitude ?? null),
+    toBindable(log.origin?.geolocation?.longitude ?? null),
+    toBindable(log.origin?.geolocation?.city ?? null),
+    toBindable(log.origin?.geolocation?.state ?? null),
+    toBindable(log.origin?.geolocation?.country ?? null),
+    toBindable(log.origin?.network?.type ?? null),
+    toBindable(log.origin?.network?.speed ?? null),
+    toBindable(log.origin?.network?.latency ?? 0),
+    toBindable(log.session?.startTime ?? null),
+    toBindable(log.session?.loginAttempts ?? 0),
+    toBindable(log.session?.lastActivity ?? null),
+    toBindable(log.session?.inactivityTime ?? 0),
+    toBindable(log.result),
+    toBindable(log.interactionType ?? null),
+    toBindable(log.elementInfo?.id ?? null),
+    toBindable(log.elementInfo?.className ?? null),
+    toBindable(log.elementInfo?.text ?? null),
+    toBindable(log.elementInfo?.type ?? null),
   ];
 }
 

@@ -50,32 +50,44 @@ const BAR_COLORS = [
 
 export function FeatureImportance() {
   const predictions = useMLStore(state => state.predictions);
+  const threshold = useMLStore(state => state.threshold);
 
   const importanceData = useMemo(() => {
     if (predictions.length === 0) return [];
 
-    const suspiciousPreds = predictions.filter(p => p.riskScore > 0.5);
-    const normalPreds = predictions.filter(p => p.riskScore <= 0.5);
+    const suspiciousPreds = predictions.filter(p => p.riskScore >= threshold);
+    const normalPreds = predictions.filter(p => p.riskScore < threshold);
 
-    if (suspiciousPreds.length === 0 || normalPreds.length === 0) return [];
+    if (suspiciousPreds.length > 0 && normalPreds.length > 0) {
+      const avgSusp = FEATURE_NAMES.map((_, i) => {
+        const sum = suspiciousPreds.reduce((acc, p) => acc + p.featureVector[i], 0);
+        return sum / suspiciousPreds.length;
+      });
+      const avgNorm = FEATURE_NAMES.map((_, i) => {
+        const sum = normalPreds.reduce((acc, p) => acc + p.featureVector[i], 0);
+        return sum / normalPreds.length;
+      });
+      return FEATURE_NAMES.map((name, i) => ({
+        feature: FEATURE_LABELS[name] || name,
+        importance: Math.abs(avgSusp[i] - avgNorm[i]),
+      }))
+        .sort((a, b) => b.importance - a.importance)
+        .slice(0, 15);
+    }
 
-    const avgSusp = FEATURE_NAMES.map((_, i) => {
-      const sum = suspiciousPreds.reduce((acc, p) => acc + p.featureVector[i], 0);
-      return sum / suspiciousPreds.length;
+    // Fallback: só uma classe (ex.: só suspeitos após simulação) — importância = desvio da média global 0.5
+    const allPreds = predictions;
+    const avgVec = FEATURE_NAMES.map((_, i) => {
+      const sum = allPreds.reduce((acc, p) => acc + p.featureVector[i], 0);
+      return sum / allPreds.length;
     });
-
-    const avgNorm = FEATURE_NAMES.map((_, i) => {
-      const sum = normalPreds.reduce((acc, p) => acc + p.featureVector[i], 0);
-      return sum / normalPreds.length;
-    });
-
     return FEATURE_NAMES.map((name, i) => ({
       feature: FEATURE_LABELS[name] || name,
-      importance: Math.abs(avgSusp[i] - avgNorm[i]),
+      importance: Math.abs(avgVec[i] - 0.5),
     }))
       .sort((a, b) => b.importance - a.importance)
       .slice(0, 15);
-  }, [predictions]);
+  }, [predictions, threshold]);
 
   return (
     <Card>
@@ -100,8 +112,8 @@ export function FeatureImportance() {
             borderRadius: 3,
           }}>
             <LayersIcon sx={{ fontSize: 48, mb: 1 }} />
-            <Typography>Necessário ter predições normais e suspeitas</Typography>
-            <Typography variant="caption">O gráfico calcula a diferença média entre comportamento normal e suspeito</Typography>
+            <Typography>Dados aparecerão conforme ações forem realizadas</Typography>
+            <Typography variant="caption">O gráfico usa o limiar de decisão para comparar predições suspeitas vs. normais</Typography>
           </Box>
         ) : (
           <ResponsiveContainer width="100%" height={420}>

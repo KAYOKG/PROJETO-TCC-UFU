@@ -30,6 +30,7 @@ import { LearningCurveChart } from './LearningCurveChart';
 import { MetricsPanel } from './MetricsPanel';
 import { UserRiskScore } from './UserRiskScore';
 
+/** Ações mais suspeitas (módulos sensíveis, exportação, acesso fora do padrão). */
 const SENSITIVE_ACTIONS = [
   { action: 'Visualizar contrato', module: 'Contratos' },
   { action: 'Exportar dados', module: 'Gestão' },
@@ -39,10 +40,28 @@ const SENSITIVE_ACTIONS = [
   { action: 'Visualizar documento confidencial', module: 'Contratos' },
 ];
 
+/** Ações mais normais (leitura, listagem) para variar o perfil e o efeito do limiar. */
+const NORMAL_ACTIONS = [
+  { action: 'Visualizar lista de clientes', module: 'Clientes' },
+  { action: 'Consulta empresa', module: 'Empresa' },
+  { action: 'Listagem de contratos', module: 'Contratos' },
+  { action: 'Visualizar dashboard', module: 'Gestão' },
+];
+
 const SIMULATE_TARGET_USERS = [
   { id: 'user1', name: 'user1' },
   { id: 'user2', name: 'user2' },
 ] as const;
+
+/** Embaralha array (Fisher–Yates). */
+function shuffle<T>(arr: T[]): T[] {
+  const out = [...arr];
+  for (let i = out.length - 1; i > 0; i--) {
+    const j = Math.floor(Math.random() * (i + 1));
+    [out[i], out[j]] = [out[j], out[i]];
+  }
+  return out;
+}
 
 export function RiskDashboard() {
   const { modelLoaded, modelLoading, modelError, initializeModel, retryModelLoad, loadDashboardData, threshold, setThreshold } = useMLStore();
@@ -62,20 +81,41 @@ export function RiskDashboard() {
     const targetId = SIMULATE_TARGET_USERS.some((u) => u.id === simulateTargetUser) ? simulateTargetUser : 'user1';
     const targetName = SIMULATE_TARGET_USERS.find((u) => u.id === targetId)?.name ?? 'user1';
     const addLog = useLogStore.getState().addLog;
-    const iterations = 18;
-    const delayMs = 400;
-    for (let i = 0; i < iterations; i++) {
-      const { action, module } = SENSITIVE_ACTIONS[i % SENSITIVE_ACTIONS.length];
-      addLog({
-        userName: targetName,
-        userId: targetId,
-        accessLevel: 'user',
-        action,
-        details: `Simulação de ação suspeita #${i + 1} - ${action}`,
-        origin: { module, device: navigator.platform, browser: navigator.userAgent },
-        result: 'success',
-      });
-      await new Promise((r) => setTimeout(r, delayMs));
+    const now = Date.now();
+    // Sequência mista: sensíveis + normais — o Limiar de Decisão define quantas são classificadas como suspeitas
+    const steps = shuffle([
+      ...SENSITIVE_ACTIONS,
+      ...SENSITIVE_ACTIONS,
+      ...SENSITIVE_ACTIONS.slice(0, 6),
+      ...NORMAL_ACTIONS,
+      ...NORMAL_ACTIONS,
+    ]).slice(0, 20);
+    for (let i = 0; i < steps.length; i++) {
+      const step = steps[i];
+      const { action, module } = step;
+      // Sessão variada por log: duração, tentativas de login, inatividade — gera features diferentes
+      const sessionStartOffsetMs = (10 + i * 1.5 + Math.random() * 8) * 60 * 1000;
+      const sessionStart = new Date(now - sessionStartOffsetMs);
+      addLog(
+        {
+          userName: targetName,
+          userId: targetId,
+          accessLevel: 'user',
+          action,
+          details: `Simulação #${i + 1} - ${action}`,
+          origin: { module, device: navigator.platform, browser: navigator.userAgent },
+          result: Math.random() > 0.1 ? 'success' : 'error',
+        },
+        {
+          overrideSession: {
+            startTime: sessionStart,
+            lastActivity: new Date(now - i * (250 + Math.random() * 200)),
+            loginAttempts: 1 + (i % 4),
+            inactivityTime: (i * 150 + Math.random() * 400) | 0,
+          },
+        },
+      );
+      await new Promise((r) => setTimeout(r, 250 + Math.random() * 350));
     }
     setSimulating(false);
   };
@@ -147,7 +187,7 @@ export function RiskDashboard() {
                       ))}
                     </Select>
                   </FormControl>
-                  <Tooltip title="Dispara ações de negócio simuladas para o usuário alvo (detecção e bloqueio)">
+                  <Tooltip title={`Simula 20 ações (sensíveis + normais) para o usuário alvo. O limiar atual (${(threshold * 100).toFixed(0)}%) define quais scores são classificados como suspeitos e geram alerta/bloqueio.`}>
                     <span>
                       <Button
                         size="small"

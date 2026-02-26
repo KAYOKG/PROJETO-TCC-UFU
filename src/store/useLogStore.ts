@@ -4,10 +4,18 @@ import { SystemLog, UserSession } from "../types";
 import { useApiErrorStore } from "./useApiErrorStore";
 import { useMLStore } from "./useMLStore";
 
+export interface AddLogOptions {
+  /** Sobrescreve campos da sessão (útil para simulação com perfis distintos). */
+  overrideSession?: Partial<UserSession>;
+}
+
 interface LogState {
   logs: SystemLog[];
   currentSession: UserSession;
-  addLog: (log: Omit<SystemLog, "id" | "timestamp" | "session">) => void;
+  addLog: (
+    log: Omit<SystemLog, "id" | "timestamp" | "session">,
+    options?: AddLogOptions,
+  ) => void;
   updateSession: (sessionData: Partial<UserSession>) => void;
   trackUserInteraction: (
     element: HTMLElement,
@@ -128,26 +136,45 @@ export const useLogStore = create<LogState>((set, get) => {
         },
       }));
     },
-    addLog: (logData) => {
+    addLog: (logData, options) => {
       const networkInfo = getCurrentNetworkInfo();
       const state = get();
 
       // Capture logs BEFORE inserting newLog to match training semantics
-      // (training excludes the current log from the recentLogs window)
       const previousLogs = state.logs.slice(0, 50);
+
+      const baseSession = state.currentSession;
+      const session: UserSession = options?.overrideSession
+        ? {
+            ...baseSession,
+            ...options.overrideSession,
+            startTime:
+              options.overrideSession.startTime !== undefined
+                ? options.overrideSession.startTime instanceof Date
+                  ? options.overrideSession.startTime
+                  : new Date(options.overrideSession.startTime as string)
+                : baseSession.startTime,
+            lastActivity:
+              options.overrideSession.lastActivity !== undefined
+                ? options.overrideSession.lastActivity instanceof Date
+                  ? options.overrideSession.lastActivity
+                  : new Date(options.overrideSession.lastActivity as string)
+                : baseSession.lastActivity,
+          }
+        : baseSession;
 
       const newLog: SystemLog = {
         id: Math.random().toString(36).substr(2, 9),
         timestamp: new Date(),
-        session: state.currentSession,
+        session,
         ...logData,
         origin: {
           ...logData.origin,
           network: networkInfo,
-          geolocation: state.currentSession.geolocation,
-          ipAddress: state.currentSession.ipAddress,
-          ipv4Address: state.currentSession.ipv4Address,
-          ipv6Address: state.currentSession.ipv6Address,
+          geolocation: session.geolocation ?? baseSession.geolocation,
+          ipAddress: session.ipAddress ?? baseSession.ipAddress,
+          ipv4Address: session.ipv4Address ?? baseSession.ipv4Address,
+          ipv6Address: session.ipv6Address ?? baseSession.ipv6Address,
         },
       };
 

@@ -23,6 +23,11 @@ interface MLState {
   userRiskScores: Map<string, number>;
   /** Evita race: só uma análise por userId por vez */
   isAnalyzingByUser: Map<string, boolean>;
+  /** Fila de logs pendentes por userId (para simulação e picos de atividade) */
+  analysisQueue: Map<
+    string,
+    Array<{ log: SystemLog; recentLogs: SystemLog[] }>
+  >;
   alertsSummary: {
     userRisks: Record<string, unknown>[];
     alertsByType: Record<string, unknown>[];
@@ -50,6 +55,7 @@ export const useMLStore = create<MLState>((set, get) => ({
   threshold: 0.7,
   userRiskScores: new Map(),
   isAnalyzingByUser: new Map(),
+  analysisQueue: new Map(),
   alertsSummary: null,
 
   initializeModel: async () => {
@@ -104,9 +110,20 @@ export const useMLStore = create<MLState>((set, get) => ({
     )
       return;
 
-    // Mutex por userId: evita análise duplicada e incidentes duplicados
+    // Mutex por userId: uma análise por vez; demais entram na fila para não perder predições (gráficos/simulação)
     const userId = log.userId;
-    if (get().isAnalyzingByUser.get(userId)) return;
+    if (get().isAnalyzingByUser.get(userId)) {
+      set((state) => {
+        const queue = state.analysisQueue.get(userId) ?? [];
+        return {
+          analysisQueue: new Map(state.analysisQueue).set(userId, [
+            ...queue,
+            { log, recentLogs },
+          ]),
+        };
+      });
+      return;
+    }
     set((state) => ({
       isAnalyzingByUser: new Map(state.isAnalyzingByUser).set(userId, true),
     }));
@@ -203,11 +220,24 @@ export const useMLStore = create<MLState>((set, get) => ({
         });
       }
     } finally {
-      set((state) => {
-        const next = new Map(state.isAnalyzingByUser);
-        next.delete(userId);
-        return { isAnalyzingByUser: next };
+      const state = get();
+      const queue = state.analysisQueue.get(userId) ?? [];
+      const nextItem = queue[0];
+      set((s) => {
+        const nextMap = new Map(s.isAnalyzingByUser);
+        nextMap.delete(userId);
+        const q = s.analysisQueue.get(userId) ?? [];
+        const newQueue = new Map(s.analysisQueue);
+        if (q.length > 1) newQueue.set(userId, q.slice(1));
+        else newQueue.delete(userId);
+        return { isAnalyzingByUser: nextMap, analysisQueue: newQueue };
       });
+      if (nextItem) {
+        setTimeout(
+          () => get().analyzeLog(nextItem.log, nextItem.recentLogs),
+          0,
+        );
+      }
     }
   },
 

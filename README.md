@@ -28,7 +28,6 @@ Sistemas corporativos (ERPs) são alvos frequentes de atividades indevidas desde
 
 ### Resultado Alcançado
 
-
 | Métrica      | Modelo ML  | Regras Estáticas | Melhoria   |
 | ------------ | ---------- | ---------------- | ---------- |
 | **F1-Score** | **99.37%** | 72.79%           | **+36.5%** |
@@ -36,7 +35,6 @@ Sistemas corporativos (ERPs) são alvos frequentes de atividades indevidas desde
 | Precision    | 99.54%     | 58.56%           | +70.0%     |
 | Recall       | 99.21%     | 96.27%           | +3.1%      |
 | AUC-ROC      | 0.9998     | —                | —          |
-
 
 > ⚠️ **Nota:** Métricas obtidas com dataset sintético (ver [Limitações](#limitações)).
 
@@ -71,10 +69,7 @@ graph TB
     API -->|model.json + weights.bin| TFInfer
 ```
 
-
-
 ### Decisões Arquiteturais
-
 
 | Decisão                               | Justificativa                                                                                                                                            |
 | ------------------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------- |
@@ -82,7 +77,6 @@ graph TB
 | **TF.js no frontend** para inferência | Classificação em tempo real no navegador sem latência de rede, modelo carregado uma única vez                                                            |
 | **SQLite (sql.js)**                   | Banco embeddable em puro JavaScript, sem necessidade de compilação nativa — ideal para portabilidade acadêmica                                           |
 | **Dataset sintético**                 | Dados reais de ameaças em ERPs não estão disponíveis publicamente; a geração sintética com perfis controlados permite validação reprodutível da hipótese |
-
 
 ### Pipeline de Machine Learning
 
@@ -95,12 +89,9 @@ flowchart LR
     E --> F["📊 Dashboard ML"]
 ```
 
-
-
 ### Categorias de Features (30 features)
 
 #### 🌐 Ambiente (9 features)
-
 
 | Feature                | Descrição                                             |
 | ---------------------- | ----------------------------------------------------- |
@@ -114,9 +105,7 @@ flowchart LR
 | `inactivitySeconds`    | Tempo de inatividade em segundos                      |
 | `isNewDevice`          | Indicador de dispositivo nunca visto antes            |
 
-
 #### 🧠 Comportamento (8 features)
-
 
 | Feature                    | Descrição                                                  |
 | -------------------------- | ---------------------------------------------------------- |
@@ -129,9 +118,7 @@ flowchart LR
 | `avgTimeBetweenActions`    | Tempo médio entre ações consecutivas (segundos)            |
 | `burstScore`               | Quantidade de ações no último minuto (indicador de rajada) |
 
-
 #### 📄 Contexto (13 features)
-
 
 | Feature                                            | Descrição                                         |
 | -------------------------------------------------- | ------------------------------------------------- |
@@ -140,11 +127,9 @@ flowchart LR
 | `resultEncoded`                                    | Resultado da operação (1=sucesso, 0=erro)         |
 | `sessionDurationMinutes`                           | Duração da sessão atual em minutos                |
 
-
 ---
 
 ## 🛠️ Tecnologias Utilizadas
-
 
 | Tecnologia            | Versão | Propósito                                                  |
 | --------------------- | ------ | ---------------------------------------------------------- |
@@ -161,7 +146,6 @@ flowchart LR
 | **Node.js**           | 18+    | Runtime do servidor                                        |
 | **jsPDF**             | 2.5    | Geração de contratos em PDF                                |
 
-
 ---
 
 ## 📦 Pré-requisitos
@@ -172,12 +156,17 @@ flowchart LR
 
 ### Portas Utilizadas
 
-
 | Porta  | Serviço                    |
 | ------ | -------------------------- |
 | `3001` | Backend (Express API)      |
 | `5173` | Frontend (Vite dev server) |
 
+### Variáveis de ambiente
+
+| Variável        | Onde     | Descrição                                        | Padrão                      |
+| --------------- | -------- | ------------------------------------------------ | --------------------------- |
+| `VITE_API_BASE` | Frontend | URL base da API (usada em `src/services/api.ts`) | `http://localhost:3001/api` |
+| `PORT`          | Backend  | Porta do servidor Express                        | `3001`                      |
 
 ---
 
@@ -232,7 +221,6 @@ npm run train
 
 **Arquivos gerados em `server/data/trained/`:**
 
-
 | Arquivo                 | Descrição                                      |
 | ----------------------- | ---------------------------------------------- |
 | `model.json`            | Topologia da rede neural (formato TF.js)       |
@@ -240,7 +228,6 @@ npm run train
 | `learning_curve.json`   | Loss e acurácia por época (treino e validação) |
 | `confusion_matrix.json` | Matrizes de confusão do ML e do baseline       |
 | `feature_stats.json`    | Estatísticas de normalização das features      |
-
 
 ### Etapa 5 — Iniciar o backend
 
@@ -256,7 +243,6 @@ O servidor Express inicia na porta **3001** com as seguintes capacidades:
 
 use `npx kill-port 3001` para matar o processo se a porta estiver ocupada.
 
-
 ### Etapa 6 — Iniciar o frontend (segundo terminal)
 
 ```bash
@@ -271,47 +257,41 @@ O Vite inicia na porta **5173** com hot module replacement.
 
 Abra o navegador em **[http://localhost:5173](http://localhost:5173)** e navegue pelos módulos:
 
+| Módulo                   | Descrição                                                                                                      |
+| ------------------------ | -------------------------------------------------------------------------------------------------------------- |
+| **Clientes**             | CRUD de clientes da corretora (cadastro, edição, exclusão)                                                     |
+| **Empresa**              | Cadastro e atualização dos dados da empresa                                                                    |
+| **Contratos**            | Geração de contratos de compra/venda de café com exportação PDF                                                |
+| **Gestão de Contratos**  | Acompanhamento de status e gerenciamento de contratos ativos                                                   |
+| **Logs do Sistema**      | DataGrid com todos os logs, filtros, busca e exportação CSV                                                    |
+| **Dashboard ML**         | Métricas, alertas, scores de risco, gráficos e análise de overfitting                                          |
+| **Gestão de Incidentes** | (SuperAdmin) Usuários com risco, histórico de incidentes, resolução (ameaça/legítimo), retreinamento do modelo |
 
-| Módulo                  | Descrição                                                             |
-| ----------------------- | --------------------------------------------------------------------- |
-| **Clientes**            | CRUD de clientes da corretora (cadastro, edição, exclusão)            |
-| **Empresa**             | Cadastro e atualização dos dados da empresa                           |
-| **Contratos**           | Geração de contratos de compra/venda de café com exportação PDF       |
-| **Gestão de Contratos** | Acompanhamento de status e gerenciamento de contratos ativos          |
-| **Logs do Sistema**     | DataGrid com todos os logs, filtros, busca e exportação CSV           |
-| **Dashboard ML**        | Métricas, alertas, scores de risco, gráficos e análise de overfitting |
-
-
-> 💡 **Dica:** Cada ação no ERP gera logs automaticamente. O modelo ML classifica cada ação em tempo real e exibe alertas no Dashboard quando detecta comportamento suspeito.
+> 💡 **Dica:** Cada ação no ERP gera logs automaticamente. O login exibe estado de carregamento ("Entrando...") durante a autenticação. O modelo ML classifica cada ação em tempo real e exibe alertas no Dashboard quando detecta comportamento suspeito.
 
 ---
 
 ## 🔌 Rotas da API
 
-Base URL: `http://localhost:3001/api`
+Base URL: `http://localhost:3001/api` (ou o valor de `VITE_API_BASE` no frontend)
 
 ### Logs
 
-
-| Método | Rota          | Descrição                                                                                          |
-| ------ | ------------- | -------------------------------------------------------------------------------------------------- |
-| `POST` | `/logs`       | Persiste um log de atividade                                                                       |
-| `POST` | `/logs/batch` | Persiste múltiplos logs em lote                                                                    |
-| `GET`  | `/logs`       | Lista logs com paginação e filtros (`userId`, `startDate`, `endDate`, `limit`, `offset`)           |
-| `GET`  | `/logs/stats` | Estatísticas agregadas: total de logs, usuários únicos, distribuição por ação/módulo, taxa de erro |
-
+| Método | Rota          | Descrição                                                                                                                        |
+| ------ | ------------- | -------------------------------------------------------------------------------------------------------------------------------- |
+| `POST` | `/logs`       | Persiste um log de atividade                                                                                                     |
+| `POST` | `/logs/batch` | Persiste múltiplos logs em lote (**máx. 100 itens**; retorna `400` se exceder)                                                   |
+| `GET`  | `/logs`       | Lista logs com paginação e filtros (`userId`, `startDate`, `endDate`, `limit`, `offset`). **`limit` limitado a 500** por request |
+| `GET`  | `/logs/stats` | Estatísticas agregadas: total de logs, usuários únicos, distribuição por ação/módulo, taxa de erro                               |
 
 ### Alertas
-
 
 | Método | Rota              | Descrição                                                                    |
 | ------ | ----------------- | ---------------------------------------------------------------------------- |
 | `GET`  | `/alerts`         | Lista alertas de risco com filtros (`userId`, `minScore`, `limit`, `offset`) |
 | `GET`  | `/alerts/summary` | Resumo: riscos por usuário, alertas por tipo, ML vs. Regras                  |
 
-
 ### Modelo ML
-
 
 | Método | Rota                      | Descrição                                                                |
 | ------ | ------------------------- | ------------------------------------------------------------------------ |
@@ -322,6 +302,23 @@ Base URL: `http://localhost:3001/api`
 | `GET`  | `/model/confusion-matrix` | Matrizes de confusão do ML e baseline                                    |
 | `GET`  | `/model/:filename`        | Serve arquivos de pesos (`.bin`) — rota sanitizada contra path traversal |
 
+### Incidentes, bloqueios e usuários
+
+| Método | Rota                                        | Descrição                                                                                                                |
+| ------ | ------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------ |
+| `POST` | `/incidents`                                | Cria incidente (ML/frontend); bloqueia usuário por 3 min (exceto SuperAdmin)                                             |
+| `GET`  | `/incidents`                                | Lista incidentes (query `status`: pending, confirmed_threat, cleared)                                                    |
+| `PUT`  | `/incidents/:id/resolve`                    | Resolve incidente (`decision`: confirm_threat \| clear; force-logout se ameaça)                                          |
+| `GET`  | `/user-blocks/:userId`                      | Status de bloqueio do usuário; retorna **`status: "confirmed_threat"** se sessão foi invalidada (admin confirmou ameaça) |
+| `POST` | `/user-blocks/:userId/unblock`              | Desbloqueio manual                                                                                                       |
+| `POST` | `/users/predictions`                        | Registra predição de risco (frontend envia após cada classificação ML)                                                   |
+| `GET`  | `/users/risk-levels`                        | Lista usuários com score de risco, status (active/suspended/observation) e bloqueio ativo                                |
+| `GET`  | `/users/:userId/session-status`             | Indica se a sessão ainda é válida (`valid: true/false`); usado para force-logout                                         |
+| `POST` | `/users/:userId/force-logout`               | Invalida sessão (admin confirma ameaça)                                                                                  |
+| `POST` | `/users/:userId/clear-session-invalidation` | Limpa invalidação (após login)                                                                                           |
+| `GET`  | `/ml/feedback-stats`                        | Contagem de feedbacks (labels) para retreinamento                                                                        |
+| `GET`  | `/ml/feedback-list`                         | Lista de feedbacks com incidente e decisão                                                                               |
+| `POST` | `/ml/retrain`                               | Retreina o modelo com dataset sintético + feedbacks                                                                      |
 
 ---
 
@@ -350,7 +347,10 @@ PROJETO-TCC-UFU/
 │   │   │   └── DeleteConfirmationModal.tsx # Dialog de confirmação de exclusão
 │   │   ├── shared/
 │   │   │   └── AddressFields.tsx      # Campos reutilizáveis de endereço
-│   │   ├── Layout.tsx                 # AppBar + Drawer lateral (navegação MUI)
+│   │   ├── admin/
+│   │   │   └── AdminIncidentPanel.tsx  # Gestão de incidentes (SuperAdmin): usuários, histórico, modelo ML, retreinamento
+│   │   ├── Layout.tsx                 # AppBar + Drawer lateral (navegação MUI); alerta de erros de API (≥5)
+│   │   ├── BlockedScreen.tsx         # Tela de sessão suspensa; mensagem confirmed_threat antes de redirect para login
 │   │   ├── SystemLogs.tsx             # Tabela de logs com DataGrid MUI X
 │   │   ├── ClientList.tsx             # Lista de clientes com busca
 │   │   ├── ContractManagement.tsx     # Gestão de contratos
@@ -361,8 +361,11 @@ PROJETO-TCC-UFU/
 │   │   ├── inferenceEngine.ts         # Classificação em tempo real + regras estáticas
 │   │   └── featureEngineering.ts      # Extração de features para inferência
 │   ├── store/
-│   │   ├── useLogStore.ts             # Store Zustand para logs e sessão
-│   │   └── useMLStore.ts             # Store Zustand para predições e alertas ML
+│   │   ├── useLogStore.ts             # Store Zustand para logs e sessão; persistência com contagem de erros de API
+│   │   ├── useMLStore.ts             # Store Zustand para predições e alertas ML; mutex por userId em analyzeLog
+│   │   ├── useAuthStore.ts           # Autenticação (login local; SuperAdmin / user1 / user2)
+│   │   ├── useBlockStore.ts          # Estado de bloqueio (timeout / confirmed_threat)
+│   │   └── useApiErrorStore.ts       # Contador de erros consecutivos de API (alerta no AppBar se ≥5)
 │   ├── services/
 │   │   └── api.ts                     # Funções de comunicação com a API
 │   ├── types/
@@ -376,7 +379,8 @@ PROJETO-TCC-UFU/
 │   ├── src/
 │   │   ├── db/
 │   │   │   ├── connection.ts          # Conexão sql.js (SQLite embeddable)
-│   │   │   └── schema.ts             # DDL das tabelas (logs, alertas, métricas)
+│   │   │   ├── helpers.ts            # queryToObjects (reutilizado por todas as rotas que leem do SQLite)
+│   │   │   └── schema.ts             # DDL das tabelas (logs, alertas, incidentes, user_blocks, feedback_labels, etc.)
 │   │   ├── ml/
 │   │   │   ├── datasetGenerator.ts    # Gerador de dataset sintético (6 perfis)
 │   │   │   ├── featureEngineering.ts  # Extração e normalização de features
@@ -384,8 +388,12 @@ PROJETO-TCC-UFU/
 │   │   │   ├── trainer.ts            # Treinamento da rede neural com TF.js
 │   │   │   └── hyperparamSearch.ts   # Busca de hiperparâmetros com k-fold CV
 │   │   ├── routes/
-│   │   │   ├── logs.ts               # CRUD de logs
+│   │   │   ├── logs.ts               # CRUD de logs (limite batch 100; limit GET até 500)
 │   │   │   ├── alerts.ts             # Consulta de alertas e resumos
+│   │   │   ├── incidents.ts          # Criação e resolução de incidentes (confirm_threat / clear)
+│   │   │   ├── userBlocks.ts         # Status de bloqueio; status confirmed_threat quando sessão invalidada
+│   │   │   ├── users.ts              # Predições, risk-levels, session-status, force-logout
+│   │   │   ├── ml.ts                 # Feedback stats/list, retreinamento
 │   │   │   └── model.ts              # Servir modelo, métricas, pesos
 │   │   ├── index.ts                   # Entry point do servidor Express
 │   │   └── sql.js.d.ts              # Type declarations para sql.js
@@ -436,7 +444,6 @@ Total de parâmetros treináveis: 4.993
 
 ### Configuração de Treinamento
 
-
 | Parâmetro        | Valor                                                    |
 | ---------------- | -------------------------------------------------------- |
 | Optimizer        | Adam (learning rate = 0.001)                             |
@@ -446,7 +453,6 @@ Total de parâmetros treináveis: 4.993
 | Regularização    | L2 (λ = 0.001), Dropout (0.3 / 0.2), Batch Normalization |
 | Split do dataset | 70% treino / 15% validação / 15% teste                   |
 | Dataset          | 8.000 amostras (70% normal, 30% suspeito)                |
-
 
 ### Hyperparameter Tuning
 
@@ -461,7 +467,6 @@ A melhor configuração é selecionada pelo F1-Score médio entre os folds.
 
 ### Métricas Finais (Conjunto de Teste)
 
-
 | Métrica   | Modelo ML  | Baseline de Regras |
 | --------- | ---------- | ------------------ |
 | Accuracy  | 99.38%     | 84.25%             |
@@ -470,11 +475,9 @@ A melhor configuração é selecionada pelo F1-Score médio entre os folds.
 | F1-Score  | **99.37%** | **72.79%**         |
 | AUC-ROC   | 0.9998     | —                  |
 
-
 ### Baseline de Regras Estáticas (8 regras)
 
 O baseline implementa 8 heurísticas de segurança. Uma ação é classificada como **suspeita se 2 ou mais regras** forem ativadas simultaneamente:
-
 
 | #   | Regra                              | Threshold                        |
 | --- | ---------------------------------- | -------------------------------- |
@@ -487,7 +490,6 @@ O baseline implementa 8 heurísticas de segurança. Uma ação é classificada c
 | 7   | Acesso excessivo a dados sensíveis | > 20 acessos a módulos restritos |
 | 8   | Distância geográfica anômala       | > 100 km do local habitual       |
 
-
 ### Limitações
 
 > ⚠️ Os perfis de comportamento do **dataset sintético** possuem padrões bem definidos e separáveis por design. Em cenários reais, comportamentos legítimos e maliciosos tendem a se sobrepor de forma mais sutil, resultando em **métricas inferiores** às reportadas. Esta ressalva é fundamental para a seção de limitações da monografia.
@@ -497,7 +499,6 @@ O baseline implementa 8 heurísticas de segurança. Uma ação é classificada c
 ## 📊 Dashboard ML
 
 O dashboard apresenta 7 painéis interativos para monitoramento e análise:
-
 
 | Painel                   | Descrição                                                                                                                                                  |
 | ------------------------ | ---------------------------------------------------------------------------------------------------------------------------------------------------------- |
@@ -509,19 +510,41 @@ O dashboard apresenta 7 painéis interativos para monitoramento e análise:
 | **AnomalyChart**         | Gráfico de área mostrando score de risco médio e máximo ao longo do tempo                                                                                  |
 | **FeatureImportance**    | Gráfico de barras horizontal com as 15 features mais discriminantes entre comportamento normal e suspeito                                                  |
 
+> 📷 _Screenshots podem ser adicionados em versão futura da documentação._
 
-> 📷 *Screenshots podem ser adicionados em versão futura da documentação.*
+---
+
+## 🔒 Robustez e melhorias de UX (pós-auditoria)
+
+Alterações aplicadas para maior estabilidade na demonstração e consistência entre treino e inferência:
+
+### Backend
+
+- **Limites de API:** `POST /logs/batch` aceita no máximo **100 itens** (retorna `400` se exceder). `GET /logs` aplica **limit máximo de 500** por request.
+- **Helpers compartilhados:** A função `queryToObjects` foi extraída para `server/src/db/helpers.ts` e é utilizada pelas rotas de incidents, users, userBlocks, alerts, ml e model.
+- **Status `confirmed_threat`:** A rota `GET /user-blocks/:userId` verifica se a sessão do usuário foi invalidada (admin confirmou ameaça). Nesse caso retorna `status: "confirmed_threat"` para o frontend exibir a mensagem adequada antes do redirect.
+
+### Frontend
+
+- **Race condition em `analyzeLog`:** Foi adicionado um **mutex por `userId`** no `useMLStore` (`isAnalyzingByUser`). Enquanto houver análise em andamento para um usuário, novas chamadas para o mesmo usuário são ignoradas, evitando criação duplicada de incidentes.
+- **Sessão em erro de rede:** `getSessionStatus` passa a retornar **`valid: false`** em caso de falha de rede ou resposta não-ok (antes assumia válido), garantindo que o force-logout seja aplicado quando o backend estiver indisponível ou retornar erro.
+- **Fluxo `confirmed_threat`:** Quando o admin confirma ameaça, o usuário bloqueado vê a mensagem **"Seu acesso foi suspenso pelo administrador"** por **4 segundos** na tela de bloqueio e só então é redirecionado para o login (evita sair direto sem feedback).
+- **Erros de API silenciosos:** Um contador de erros consecutivos (`useApiErrorStore`) é incrementado em falhas de `persistLog`, `reportPrediction` e `createIncident`. Se houver **5 ou mais erros consecutivos**, o AppBar exibe o alerta **"Problemas de comunicação com o servidor"** (o contador é zerado em qualquer sucesso).
+- **Login com loading:** O botão de login exibe **CircularProgress** e o texto "Entrando..." enquanto o submit é processado; o botão fica desabilitado para evitar cliques duplicados.
+- **Feature engineering alinhado:** As funções `classifyAction` e `classifyModule` em `src/ml/featureEngineering.ts` foram **sincronizadas** com o backend (`server/src/ml/featureEngineering.ts`) para que as mesmas strings gerem os mesmos códigos (evita divergência entre treino e inferência).
+- **API base configurável:** A URL da API no frontend é definida por **`VITE_API_BASE`** (fallback: `http://localhost:3001/api`).
+- **Logs em desenvolvimento:** `console.log` e `console.warn` no frontend (modelLoader, useMLStore, GeolocationProvider) são exibidos apenas quando **`import.meta.env.DEV`** é verdadeiro.
 
 ---
 
 ## 📚 Referências Acadêmicas
 
-1. **Du, M., Li, F., Zheng, G., & Srikumar, V.** (2017). *DeepLog: Anomaly Detection and Diagnosis from System Logs through Deep Learning*. ACM CCS 2017.
-2. **Berlin, K., Slater, D., & Saxe, J.** (2015). *Malicious Behavior Detection using Windows Audit Logs*. ACM AISec Workshop.
-3. **Ranjan, R. & Kumar, S.S.** (2022). *User Behaviour Analysis using Data Analytics and Machine Learning to Identify Malicious User versus Legitimate User*. High Technology Letters, 28(1).
-4. **Jiang, J. et al.** (2018). *Anomaly Detection with Graph Convolutional Networks for Insider Threat and Fraud Detection*. IEEE MILCOM.
-5. **Bolt, A., de Leoni, M., & van der Aalst, W.M.P.** (2018). *Process Variant Comparison: Using Event Logs to Detect Differences in Behavior and Business Rules*. Information Systems, v. 74.
-6. **Danziger, M. & Henriques, M.A.A.** (2017). *Autonomic Computing Guided by Machine Learning to Counteract Security Threats in Information Systems*. XIV SBSEG.
+1. **Du, M., Li, F., Zheng, G., & Srikumar, V.** (2017). _DeepLog: Anomaly Detection and Diagnosis from System Logs through Deep Learning_. ACM CCS 2017.
+2. **Berlin, K., Slater, D., & Saxe, J.** (2015). _Malicious Behavior Detection using Windows Audit Logs_. ACM AISec Workshop.
+3. **Ranjan, R. & Kumar, S.S.** (2022). _User Behaviour Analysis using Data Analytics and Machine Learning to Identify Malicious User versus Legitimate User_. High Technology Letters, 28(1).
+4. **Jiang, J. et al.** (2018). _Anomaly Detection with Graph Convolutional Networks for Insider Threat and Fraud Detection_. IEEE MILCOM.
+5. **Bolt, A., de Leoni, M., & van der Aalst, W.M.P.** (2018). _Process Variant Comparison: Using Event Logs to Detect Differences in Behavior and Business Rules_. Information Systems, v. 74.
+6. **Danziger, M. & Henriques, M.A.A.** (2017). _Autonomic Computing Guided by Machine Learning to Counteract Security Threats in Information Systems_. XIV SBSEG.
 
 ---
 
@@ -559,4 +582,3 @@ SOFTWARE.
 
 - **Universidade Federal de Uberlândia (UFU)** — Faculdade de Computação, Campus Monte Carmelo
 - Desenvolvido como Trabalho de Conclusão de Curso para o Bacharelado em Sistemas de Informação
-
