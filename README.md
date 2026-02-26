@@ -510,6 +510,8 @@ O dashboard apresenta 7 painéis interativos para monitoramento e análise:
 | **AnomalyChart**         | Gráfico de área mostrando score de risco médio e máximo ao longo do tempo                                                                                  |
 | **FeatureImportance**    | Gráfico de barras horizontal com as 15 features mais discriminantes entre comportamento normal e suspeito                                                  |
 
+**Simulação de ações (SuperAdmin/DEV):** O botão "Simular Ações Suspeitas" dispara **20 ações** em sequência para um usuário alvo (user1 ou user2). A sequência mistura ações **sensíveis** (exportar dados, contratos, configuração) e **normais** (listagem de clientes, consulta empresa), em ordem aleatória. Cada log usa uma **sessão simulada** (duração, tentativas de login, inatividade variados) para que os vetores de features difiram e os gráficos (Importância das Features, Score ao Longo do Tempo) reflitam a simulação. O **Limiar de Decisão** definido no slider é usado na classificação: quanto menor o limiar, mais ações podem ser classificadas como suspeitas e gerar alerta/bloqueio.
+
 > 📷 _Screenshots podem ser adicionados em versão futura da documentação._
 
 ---
@@ -523,10 +525,12 @@ Alterações aplicadas para maior estabilidade na demonstração e consistência
 - **Limites de API:** `POST /logs/batch` aceita no máximo **100 itens** (retorna `400` se exceder). `GET /logs` aplica **limit máximo de 500** por request.
 - **Helpers compartilhados:** A função `queryToObjects` foi extraída para `server/src/db/helpers.ts` e é utilizada pelas rotas de incidents, users, userBlocks, alerts, ml e model.
 - **Status `confirmed_threat`:** A rota `GET /user-blocks/:userId` verifica se a sessão do usuário foi invalidada (admin confirmou ameaça). Nesse caso retorna `status: "confirmed_threat"` para o frontend exibir a mensagem adequada antes do redirect.
+- **Parâmetros de log (sql.js):** Os valores enviados em `POST /logs` e `/logs/batch` são normalizados com `toBindable()` antes do bind no SQLite (apenas string, number ou null), evitando o erro "Wrong API use" quando o frontend envia objetos aninhados (ex.: Date não serializado).
 
 ### Frontend
 
-- **Race condition em `analyzeLog`:** Foi adicionado um **mutex por `userId`** no `useMLStore` (`isAnalyzingByUser`). Enquanto houver análise em andamento para um usuário, novas chamadas para o mesmo usuário são ignoradas, evitando criação duplicada de incidentes.
+- **Race condition e fila em `analyzeLog`:** Mutex por `userId` no `useMLStore` (`isAnalyzingByUser`) evita análises concorrentes; logs que chegam durante a análise entram numa **fila** (`analysisQueue`) e são processados em sequência, para que a simulação e os gráficos recebam todas as predições (Importância das Features, Score ao Longo do Tempo).
+- **Simulação com sessão variada:** `addLog` aceita opcionalmente `options.overrideSession` (parcial). Na simulação do Dashboard, cada log recebe sessão simulada (startTime, loginAttempts, inactivityTime variados) para gerar vetores de features distintos e refletir o efeito do **Limiar de Decisão** sobre user1/user2.
 - **Sessão em erro de rede:** `getSessionStatus` passa a retornar **`valid: false`** em caso de falha de rede ou resposta não-ok (antes assumia válido), garantindo que o force-logout seja aplicado quando o backend estiver indisponível ou retornar erro.
 - **Fluxo `confirmed_threat`:** Quando o admin confirma ameaça, o usuário bloqueado vê a mensagem **"Seu acesso foi suspenso pelo administrador"** por **4 segundos** na tela de bloqueio e só então é redirecionado para o login (evita sair direto sem feedback).
 - **Erros de API silenciosos:** Um contador de erros consecutivos (`useApiErrorStore`) é incrementado em falhas de `persistLog`, `reportPrediction` e `createIncident`. Se houver **5 ou mais erros consecutivos**, o AppBar exibe o alerta **"Problemas de comunicação com o servidor"** (o contador é zerado em qualquer sucesso).
