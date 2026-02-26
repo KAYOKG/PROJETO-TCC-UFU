@@ -404,9 +404,6 @@ async function main() {
   console.log(
     "tendem a se sobrepor de forma mais sutil, resultando em métricas inferiores.",
   );
-  console.log(
-    "Esta ressalva deve constar na seção de limitações da monografia.",
-  );
 }
 
 main().catch(console.error);
