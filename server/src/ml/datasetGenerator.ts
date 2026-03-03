@@ -7,21 +7,21 @@
  * - Suspeito: Data Exfiltration, Privilege Escalation, Account Compromise, Insider Threat
  */
 
+import fs from "fs";
+import path from "path";
+import { fileURLToPath } from "url";
+import { getDb, saveDb } from "../db/connection.js";
+import { initializeDatabase } from "../db/schema.js";
 import {
-  extractFeatures,
-  computeFeatureStats,
-  normalizeFeatures,
-  buildUserHistories,
-  NUM_FEATURES,
   FEATURE_NAMES,
-  type RawLogRow,
+  NUM_FEATURES,
+  buildUserHistories,
+  computeFeatureStats,
+  extractFeatures,
+  normalizeFeatures,
   type FeatureStats,
-} from './featureEngineering.js';
-import { getDb, saveDb } from '../db/connection.js';
-import { initializeDatabase } from '../db/schema.js';
-import fs from 'fs';
-import path from 'path';
-import { fileURLToPath } from 'url';
+  type RawLogRow,
+} from "./featureEngineering.js";
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 
@@ -76,28 +76,68 @@ interface UserProfile {
   sessionDurationRange: [number, number];
 }
 
-const MODULES = ['Clientes', 'Empresa', 'Contratos', 'Gestão de Contratos', 'Sistema'];
+const MODULES = [
+  "Clientes",
+  "Empresa",
+  "Contratos",
+  "Gestão de Contratos",
+  "Sistema",
+];
 const ACTIONS: Record<string, string[]> = {
-  Clientes: ['Cadastro de Cliente', 'Edição de Cliente', 'Exclusão de Cliente', 'Listagem de Clientes', 'Visualização de Cliente'],
-  Empresa: ['Cadastro de Empresa', 'Atualização de Empresa', 'Visualização de Empresa'],
-  Contratos: ['Criação de Contrato', 'Visualização de Contrato'],
-  'Gestão de Contratos': ['Atualização de Status', 'Exclusão de Contrato', 'Listagem de Contratos'],
-  Sistema: ['Interação do Usuário - click', 'Interação do Usuário - navigation', 'Inatividade Detectada'],
+  Clientes: [
+    "Cadastro de Cliente",
+    "Edição de Cliente",
+    "Exclusão de Cliente",
+    "Listagem de Clientes",
+    "Visualização de Cliente",
+  ],
+  Empresa: [
+    "Cadastro de Empresa",
+    "Atualização de Empresa",
+    "Visualização de Empresa",
+  ],
+  Contratos: ["Criação de Contrato", "Visualização de Contrato"],
+  "Gestão de Contratos": [
+    "Atualização de Status",
+    "Exclusão de Contrato",
+    "Listagem de Contratos",
+  ],
+  Sistema: [
+    "Interação do Usuário - click",
+    "Interação do Usuário - navigation",
+    "Inatividade Detectada",
+  ],
 };
-const DEVICES = ['Win32', 'MacIntel', 'Linux x86_64'];
-const BROWSERS = ['Mozilla/5.0 Chrome/120', 'Mozilla/5.0 Firefox/121', 'Mozilla/5.0 Safari/17'];
-const BASE_IPS = ['192.168.1.', '10.0.0.', '172.16.0.'];
+const DEVICES = ["Win32", "MacIntel", "Linux x86_64"];
+const BROWSERS = [
+  "Mozilla/5.0 Chrome/120",
+  "Mozilla/5.0 Firefox/121",
+  "Mozilla/5.0 Safari/17",
+];
+const BASE_IPS = ["192.168.1.", "10.0.0.", "172.16.0."];
 
 function createNormalWorker(id: number): UserProfile {
   return {
     label: 0,
     userId: `user-${id}`,
     userName: `Funcionário ${id}`,
-    accessLevel: 'user',
+    accessLevel: "user",
     hourRange: [8, 18],
     actionsPerSession: [15, 40],
-    actionWeights: { Clientes: 5, Empresa: 1, Contratos: 2, 'Gestão de Contratos': 1, Sistema: 3 },
-    moduleWeights: { Clientes: 5, Empresa: 1, Contratos: 2, 'Gestão de Contratos': 1, Sistema: 3 },
+    actionWeights: {
+      Clientes: 5,
+      Empresa: 1,
+      Contratos: 2,
+      "Gestão de Contratos": 1,
+      Sistema: 3,
+    },
+    moduleWeights: {
+      Clientes: 5,
+      Empresa: 1,
+      Contratos: 2,
+      "Gestão de Contratos": 1,
+      Sistema: 3,
+    },
     errorProbability: 0.02,
     ipVariation: false,
     geoVariation: false,
@@ -114,11 +154,23 @@ function createNormalManager(id: number): UserProfile {
     label: 0,
     userId: `admin-${id}`,
     userName: `Gerente ${id}`,
-    accessLevel: 'admin',
+    accessLevel: "admin",
     hourRange: [7, 20],
     actionsPerSession: [20, 60],
-    actionWeights: { Clientes: 3, Empresa: 3, Contratos: 4, 'Gestão de Contratos': 4, Sistema: 2 },
-    moduleWeights: { Clientes: 3, Empresa: 3, Contratos: 4, 'Gestão de Contratos': 4, Sistema: 2 },
+    actionWeights: {
+      Clientes: 3,
+      Empresa: 3,
+      Contratos: 4,
+      "Gestão de Contratos": 4,
+      Sistema: 2,
+    },
+    moduleWeights: {
+      Clientes: 3,
+      Empresa: 3,
+      Contratos: 4,
+      "Gestão de Contratos": 4,
+      Sistema: 2,
+    },
     errorProbability: 0.01,
     ipVariation: false,
     geoVariation: false,
@@ -135,11 +187,23 @@ function createDataExfiltration(id: number): UserProfile {
     label: 1,
     userId: `user-exfil-${id}`,
     userName: `Exfiltrador ${id}`,
-    accessLevel: 'user',
+    accessLevel: "user",
     hourRange: [22, 5],
     actionsPerSession: [60, 150],
-    actionWeights: { Clientes: 8, Empresa: 1, Contratos: 8, 'Gestão de Contratos': 6, Sistema: 1 },
-    moduleWeights: { Clientes: 8, Empresa: 1, Contratos: 8, 'Gestão de Contratos': 6, Sistema: 1 },
+    actionWeights: {
+      Clientes: 8,
+      Empresa: 1,
+      Contratos: 8,
+      "Gestão de Contratos": 6,
+      Sistema: 1,
+    },
+    moduleWeights: {
+      Clientes: 8,
+      Empresa: 1,
+      Contratos: 8,
+      "Gestão de Contratos": 6,
+      Sistema: 1,
+    },
     errorProbability: 0.05,
     ipVariation: false,
     geoVariation: false,
@@ -156,11 +220,23 @@ function createPrivilegeEscalation(id: number): UserProfile {
     label: 1,
     userId: `user-privesc-${id}`,
     userName: `PrivEsc ${id}`,
-    accessLevel: 'guest',
+    accessLevel: "guest",
     hourRange: [10, 22],
     actionsPerSession: [30, 80],
-    actionWeights: { Clientes: 2, Empresa: 4, Contratos: 5, 'Gestão de Contratos': 6, Sistema: 4 },
-    moduleWeights: { Clientes: 2, Empresa: 4, Contratos: 5, 'Gestão de Contratos': 6, Sistema: 4 },
+    actionWeights: {
+      Clientes: 2,
+      Empresa: 4,
+      Contratos: 5,
+      "Gestão de Contratos": 6,
+      Sistema: 4,
+    },
+    moduleWeights: {
+      Clientes: 2,
+      Empresa: 4,
+      Contratos: 5,
+      "Gestão de Contratos": 6,
+      Sistema: 4,
+    },
     errorProbability: 0.35,
     ipVariation: false,
     geoVariation: false,
@@ -177,11 +253,23 @@ function createAccountCompromise(id: number): UserProfile {
     label: 1,
     userId: `user-compromised-${id}`,
     userName: `Comprometido ${id}`,
-    accessLevel: 'admin',
+    accessLevel: "admin",
     hourRange: [0, 23],
     actionsPerSession: [25, 70],
-    actionWeights: { Clientes: 3, Empresa: 2, Contratos: 5, 'Gestão de Contratos': 5, Sistema: 2 },
-    moduleWeights: { Clientes: 3, Empresa: 2, Contratos: 5, 'Gestão de Contratos': 5, Sistema: 2 },
+    actionWeights: {
+      Clientes: 3,
+      Empresa: 2,
+      Contratos: 5,
+      "Gestão de Contratos": 5,
+      Sistema: 2,
+    },
+    moduleWeights: {
+      Clientes: 3,
+      Empresa: 2,
+      Contratos: 5,
+      "Gestão de Contratos": 5,
+      Sistema: 2,
+    },
     errorProbability: 0.1,
     ipVariation: true,
     geoVariation: true,
@@ -198,11 +286,23 @@ function createInsiderThreat(id: number): UserProfile {
     label: 1,
     userId: `user-insider-${id}`,
     userName: `Insider ${id}`,
-    accessLevel: 'admin',
+    accessLevel: "admin",
     hourRange: [20, 6],
     actionsPerSession: [40, 100],
-    actionWeights: { Clientes: 2, Empresa: 1, Contratos: 7, 'Gestão de Contratos': 8, Sistema: 1 },
-    moduleWeights: { Clientes: 2, Empresa: 1, Contratos: 7, 'Gestão de Contratos': 8, Sistema: 1 },
+    actionWeights: {
+      Clientes: 2,
+      Empresa: 1,
+      Contratos: 7,
+      "Gestão de Contratos": 8,
+      Sistema: 1,
+    },
+    moduleWeights: {
+      Clientes: 2,
+      Empresa: 1,
+      Contratos: 7,
+      "Gestão de Contratos": 8,
+      Sistema: 1,
+    },
     errorProbability: 0.03,
     ipVariation: false,
     geoVariation: false,
@@ -226,7 +326,10 @@ function generateHour(range: [number, number]): number {
 }
 
 function generateSessionLogs(profile: UserProfile): RawLogRow[] {
-  const numActions = randInt(profile.actionsPerSession[0], profile.actionsPerSession[1]);
+  const numActions = randInt(
+    profile.actionsPerSession[0],
+    profile.actionsPerSession[1],
+  );
   const logs: RawLogRow[] = [];
   const baseDate = new Date(2025, randInt(0, 11), randInt(1, 28));
   const hour = generateHour(profile.hourRange);
@@ -235,7 +338,9 @@ function generateSessionLogs(profile: UserProfile): RawLogRow[] {
   const sessionStart = new Date(baseDate);
   sessionStart.setHours(hour, startMinute, 0, 0);
 
-  const sessionDuration = randInt(profile.sessionDurationRange[0], profile.sessionDurationRange[1]) * 60000;
+  const sessionDuration =
+    randInt(profile.sessionDurationRange[0], profile.sessionDurationRange[1]) *
+    60000;
   const device = pick(DEVICES);
   const browser = pick(BROWSERS);
   const baseIp = pick(BASE_IPS) + randInt(1, 254);
@@ -243,35 +348,42 @@ function generateSessionLogs(profile: UserProfile): RawLogRow[] {
   const baseLon = gaussianNoise(-48.27, 0.01);
 
   const modules = Object.keys(profile.moduleWeights);
-  const moduleWeightValues = modules.map(m => profile.moduleWeights[m]);
+  const moduleWeightValues = modules.map((m) => profile.moduleWeights[m]);
 
   for (let i = 0; i < numActions; i++) {
     const timeOffset = Math.min(
       (i / numActions) * sessionDuration + gaussianNoise(0, 5000),
-      sessionDuration
+      sessionDuration,
     );
     const ts = new Date(sessionStart.getTime() + Math.max(0, timeOffset));
 
     const isBurst = Math.random() < profile.burstProbability;
     if (isBurst && i > 0) {
-      ts.setTime(new Date(logs[logs.length - 1].timestamp).getTime() + randInt(500, 3000));
+      ts.setTime(
+        new Date(logs[logs.length - 1].timestamp).getTime() +
+          randInt(500, 3000),
+      );
     }
 
     const mod = weightedPick(modules, moduleWeightValues);
-    const moduleActions = ACTIONS[mod] || ['Interação do Usuário - click'];
+    const moduleActions = ACTIONS[mod] || ["Interação do Usuário - click"];
     const action = pick(moduleActions);
     const isError = Math.random() < profile.errorProbability;
 
-    const currentDevice = profile.deviceVariation && Math.random() < 0.5 ? pick(DEVICES) : device;
-    const currentIp = profile.ipVariation && Math.random() < 0.5
-      ? pick(BASE_IPS) + randInt(1, 254)
-      : baseIp;
-    const currentLat = profile.geoVariation && Math.random() < 0.3
-      ? gaussianNoise(baseLat + randFloat(-5, 5), 0.5)
-      : gaussianNoise(baseLat, 0.005);
-    const currentLon = profile.geoVariation && Math.random() < 0.3
-      ? gaussianNoise(baseLon + randFloat(-5, 5), 0.5)
-      : gaussianNoise(baseLon, 0.005);
+    const currentDevice =
+      profile.deviceVariation && Math.random() < 0.5 ? pick(DEVICES) : device;
+    const currentIp =
+      profile.ipVariation && Math.random() < 0.5
+        ? pick(BASE_IPS) + randInt(1, 254)
+        : baseIp;
+    const currentLat =
+      profile.geoVariation && Math.random() < 0.3
+        ? gaussianNoise(baseLat + randFloat(-5, 5), 0.5)
+        : gaussianNoise(baseLat, 0.005);
+    const currentLon =
+      profile.geoVariation && Math.random() < 0.3
+        ? gaussianNoise(baseLon + randFloat(-5, 5), 0.5)
+        : gaussianNoise(baseLon, 0.005);
 
     logs.push({
       id: `synth-${profile.userId}-${Date.now()}-${i}-${Math.random().toString(36).substr(2, 5)}`,
@@ -288,11 +400,17 @@ function generateSessionLogs(profile: UserProfile): RawLogRow[] {
       geo_latitude: currentLat,
       geo_longitude: currentLon,
       network_latency: gaussianNoise(50, 20),
-      network_type: pick(['wifi', '4g', 'ethernet']),
+      network_type: pick(["wifi", "4g", "ethernet"]),
       session_start_time: sessionStart.toISOString(),
-      session_login_attempts: randInt(profile.loginAttemptRange[0], profile.loginAttemptRange[1]),
-      session_inactivity_time: randInt(profile.inactivityRange[0], profile.inactivityRange[1]),
-      result: isError ? 'error' : 'success',
+      session_login_attempts: randInt(
+        profile.loginAttemptRange[0],
+        profile.loginAttemptRange[1],
+      ),
+      session_inactivity_time: randInt(
+        profile.inactivityRange[0],
+        profile.inactivityRange[1],
+      ),
+      result: isError ? "error" : "success",
     });
   }
 
@@ -306,15 +424,17 @@ interface DatasetSample {
   label: number;
 }
 
-export function generateDataset(totalSamples: number = 8000): {
+export function generateDataset(totalSamples: number = 10000): {
   samples: DatasetSample[];
   featureStats: FeatureStats[];
 } {
-  const normalRatio = 0.7;
+  const normalRatio = 0.5;
   const normalCount = Math.floor(totalSamples * normalRatio);
   const suspiciousCount = totalSamples - normalCount;
 
-  console.log(`Generating ${totalSamples} samples (${normalCount} normal, ${suspiciousCount} suspicious)...`);
+  console.log(
+    `Generating ${totalSamples} samples (${normalCount} normal, ${suspiciousCount} suspicious)...`,
+  );
 
   const allLogs: RawLogRow[] = [];
   const logLabels = new Map<string, number>();
@@ -326,9 +446,10 @@ export function generateDataset(totalSamples: number = 8000): {
   // Generate normal profiles
   while (normalGenerated < normalCount) {
     profileId++;
-    const profile = Math.random() < 0.6
-      ? createNormalWorker(profileId)
-      : createNormalManager(profileId);
+    const profile =
+      Math.random() < 0.6
+        ? createNormalWorker(profileId)
+        : createNormalManager(profileId);
     const logs = generateSessionLogs(profile);
     for (const log of logs) {
       logLabels.set(log.id, profile.label);
@@ -365,7 +486,9 @@ export function generateDataset(totalSamples: number = 8000): {
   const userHistories = buildUserHistories(allLogs);
 
   // Sort by timestamp for windowed features
-  allLogs.sort((a, b) => new Date(a.timestamp).getTime() - new Date(b.timestamp).getTime());
+  allLogs.sort(
+    (a, b) => new Date(a.timestamp).getTime() - new Date(b.timestamp).getTime(),
+  );
 
   const WINDOW_SIZE = 50;
   const samples: DatasetSample[] = [];
@@ -375,13 +498,17 @@ export function generateDataset(totalSamples: number = 8000): {
     const windowStart = Math.max(0, i - WINDOW_SIZE);
     const recentLogs = allLogs.slice(windowStart, i);
 
-    const features = extractFeatures(log, recentLogs, userHistories.get(log.user_id));
+    const features = extractFeatures(
+      log,
+      recentLogs,
+      userHistories.get(log.user_id),
+    );
     const label = logLabels.get(log.id) ?? 0;
     samples.push({ features, label });
   }
 
   // Compute normalization stats
-  const featureMatrix = samples.map(s => s.features);
+  const featureMatrix = samples.map((s) => s.features);
   const featureStats = computeFeatureStats(featureMatrix);
 
   // Normalize
@@ -399,9 +526,11 @@ export function generateDataset(totalSamples: number = 8000): {
   // Trim to exact totalSamples
   const finalSamples = samples.slice(0, totalSamples);
 
-  const normalFinal = finalSamples.filter(s => s.label === 0).length;
-  const suspFinal = finalSamples.filter(s => s.label === 1).length;
-  console.log(`Final dataset: ${finalSamples.length} samples (${normalFinal} normal, ${suspFinal} suspicious)`);
+  const normalFinal = finalSamples.filter((s) => s.label === 0).length;
+  const suspFinal = finalSamples.filter((s) => s.label === 1).length;
+  console.log(
+    `Final dataset: ${finalSamples.length} samples (${normalFinal} normal, ${suspFinal} suspicious)`,
+  );
   console.log(`Features per sample: ${NUM_FEATURES}`);
 
   return { samples: finalSamples, featureStats };
@@ -410,40 +539,49 @@ export function generateDataset(totalSamples: number = 8000): {
 // --- CLI entry point ---
 
 async function main() {
-  console.log('=== RAA Synthetic Dataset Generator ===\n');
+  console.log("=== RAA Synthetic Dataset Generator ===\n");
 
-  const totalSamples = parseInt(process.argv[2] || '8000', 10);
+  const totalSamples = parseInt(process.argv[2] || "10000", 10);
   const { samples, featureStats } = generateDataset(totalSamples);
 
   // Save dataset
-  const outputDir = path.join(__dirname, '..', '..', 'data', 'synthetic');
+  const outputDir = path.join(__dirname, "..", "..", "data", "synthetic");
   if (!fs.existsSync(outputDir)) {
     fs.mkdirSync(outputDir, { recursive: true });
   }
 
-  const datasetPath = path.join(outputDir, 'dataset.json');
-  fs.writeFileSync(datasetPath, JSON.stringify({ samples, featureStats, featureNames: FEATURE_NAMES }, null, 2));
+  const datasetPath = path.join(outputDir, "dataset.json");
+  fs.writeFileSync(
+    datasetPath,
+    JSON.stringify(
+      { samples, featureStats, featureNames: FEATURE_NAMES },
+      null,
+      2,
+    ),
+  );
   console.log(`\nDataset saved to ${datasetPath}`);
 
   // Save feature stats to database
   await initializeDatabase();
   const db = await getDb();
 
-  db.run('DELETE FROM feature_stats');
+  db.run("DELETE FROM feature_stats");
   for (const stat of featureStats) {
     db.run(
-      'INSERT INTO feature_stats (feature_name, min_val, max_val, mean_val, std_val) VALUES (?, ?, ?, ?, ?)',
-      [stat.featureName, stat.min, stat.max, stat.mean, stat.std]
+      "INSERT INTO feature_stats (feature_name, min_val, max_val, mean_val, std_val) VALUES (?, ?, ?, ?, ?)",
+      [stat.featureName, stat.min, stat.max, stat.mean, stat.std],
     );
   }
   saveDb();
 
-  console.log('Feature stats saved to database.');
+  console.log("Feature stats saved to database.");
 
   // Print distribution summary
-  console.log('\n--- Feature Stats Summary ---');
+  console.log("\n--- Feature Stats Summary ---");
   for (const stat of featureStats) {
-    console.log(`  ${stat.featureName}: min=${stat.min.toFixed(3)}, max=${stat.max.toFixed(3)}, mean=${stat.mean.toFixed(3)}, std=${stat.std.toFixed(3)}`);
+    console.log(
+      `  ${stat.featureName}: min=${stat.min.toFixed(3)}, max=${stat.max.toFixed(3)}, mean=${stat.mean.toFixed(3)}, std=${stat.std.toFixed(3)}`,
+    );
   }
 }
 

@@ -194,7 +194,7 @@ npm run generate-dataset
 
 **O que acontece:**
 
-- São gerados **8.000 amostras** rotuladas (70% normal, 30% suspeito)
+- São gerados **10.000 amostras** rotuladas (50% normal, 50% suspeito)
 - **6 perfis de usuário** são simulados:
   - ✅ **Normal Office Worker** — funcionário comum, horário comercial, ações moderadas
   - ✅ **Normal Manager** — gerente com acesso admin, mais módulos, jornada estendida
@@ -399,7 +399,7 @@ PROJETO-TCC-UFU/
 │   │   └── sql.js.d.ts              # Type declarations para sql.js
 │   ├── data/
 │   │   ├── synthetic/
-│   │   │   └── dataset.json          # Dataset gerado (8000 amostras)
+│   │   │   └── dataset.json          # Dataset gerado (10.000 amostras)
 │   │   └── trained/
 │   │       ├── model.json            # Topologia do modelo
 │   │       ├── weights.bin           # Pesos binários
@@ -452,7 +452,7 @@ Total de parâmetros treináveis: 4.993
 | Batch size       | 64                                                       |
 | Regularização    | L2 (λ = 0.001), Dropout (0.3 / 0.2), Batch Normalization |
 | Split do dataset | 70% treino / 15% validação / 15% teste                   |
-| Dataset          | 8.000 amostras (70% normal, 30% suspeito)                |
+| Dataset          | 10.000 amostras (50% normal, 50% suspeito)               |
 
 ### Hyperparameter Tuning
 
