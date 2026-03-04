@@ -194,10 +194,12 @@ npm run generate-dataset
 
 **O que acontece:**
 
-- São gerados **10.000 amostras** rotuladas (50% normal, 50% suspeito)
-- **6 perfis de usuário** são simulados:
+- São gerados **10.000 amostras** rotuladas (50% normal, 50% suspeito), ~1.250 por perfil
+- **8 perfis de usuário** são simulados:
   - ✅ **Normal Office Worker** — funcionário comum, horário comercial, ações moderadas
   - ✅ **Normal Manager** — gerente com acesso admin, mais módulos, jornada estendida
+  - ✅ **Normal Analyst** — analista de cotações/relatórios, muitas leituras, sessões longas
+  - ✅ **Normal Intern** — estagiário, poucas ações por sessão, acesso restrito, erros de validação
   - ❌ **Data Exfiltration** — alta frequência, horário noturno, foco em dados sensíveis
   - ❌ **Privilege Escalation** — nível guest tentando acessar módulos restritos, alta taxa de erro
   - ❌ **Account Compromise** — variação de IP/dispositivo/geolocalização, padrão errático
@@ -382,7 +384,7 @@ PROJETO-TCC-UFU/
 │   │   │   ├── helpers.ts            # queryToObjects (reutilizado por todas as rotas que leem do SQLite)
 │   │   │   └── schema.ts             # DDL das tabelas (logs, alertas, incidentes, user_blocks, feedback_labels, etc.)
 │   │   ├── ml/
-│   │   │   ├── datasetGenerator.ts    # Gerador de dataset sintético (6 perfis)
+│   │   │   ├── datasetGenerator.ts    # Gerador de dataset sintético (8 perfis)
 │   │   │   ├── featureEngineering.ts  # Extração e normalização de features
 │   │   │   ├── evaluator.ts          # Avaliação do modelo + baseline de regras (8 regras)
 │   │   │   ├── trainer.ts            # Treinamento da rede neural com TF.js
@@ -452,7 +454,7 @@ Total de parâmetros treináveis: 4.993
 | Batch size       | 64                                                       |
 | Regularização    | L2 (λ = 0.001), Dropout (0.3 / 0.2), Batch Normalization |
 | Split do dataset | 70% treino / 15% validação / 15% teste                   |
-| Dataset          | 10.000 amostras (50% normal, 50% suspeito)               |
+| Dataset          | 10.000 amostras (50% normal, 50% suspeito, 8 perfis)     |
 
 ### Hyperparameter Tuning
 

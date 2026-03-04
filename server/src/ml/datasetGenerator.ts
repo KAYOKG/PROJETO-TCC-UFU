@@ -2,9 +2,9 @@
  * Synthetic Dataset Generator
  *
  * Gera dados rotulados (normal=0 / suspeito=1) simulando perfis de uso do ERP.
- * Perfis baseados nas ameaças definidas na monografia:
- * - Normal Office Worker, Normal Manager
- * - Suspeito: Data Exfiltration, Privilege Escalation, Account Compromise, Insider Threat
+ * Perfis normais (4): Normal Worker, Normal Manager, Normal Analyst, Normal Intern.
+ * Perfis suspeitos (4, baseados em artigos): Data Exfiltration, Privilege Escalation,
+ * Account Compromise, Insider Threat.
  */
 
 import fs from "fs";
@@ -179,6 +179,74 @@ function createNormalManager(id: number): UserProfile {
     inactivityRange: [0, 180000],
     burstProbability: 0.08,
     sessionDurationRange: [60, 600],
+  };
+}
+
+/** Analista de mercado/cotações: muitas leituras, poucas escritas, horário comercial, sessões longas. */
+function createNormalAnalyst(id: number): UserProfile {
+  return {
+    label: 0,
+    userId: `analyst-${id}`,
+    userName: `Analista ${id}`,
+    accessLevel: "user",
+    hourRange: [8, 18],
+    actionsPerSession: [40, 100],
+    actionWeights: {
+      Clientes: 2,
+      Empresa: 2,
+      Contratos: 5,
+      "Gestão de Contratos": 5,
+      Sistema: 1,
+    },
+    moduleWeights: {
+      Clientes: 2,
+      Empresa: 2,
+      Contratos: 5,
+      "Gestão de Contratos": 5,
+      Sistema: 1,
+    },
+    errorProbability: 0.02,
+    ipVariation: false,
+    geoVariation: false,
+    deviceVariation: false,
+    loginAttemptRange: [1, 1],
+    inactivityRange: [45000, 180000],
+    burstProbability: 0.03,
+    sessionDurationRange: [90, 600],
+  };
+}
+
+/** Estagiário: poucas ações por sessão, acesso restrito, intervalos maiores, taxa de erro um pouco maior (validação). */
+function createNormalIntern(id: number): UserProfile {
+  return {
+    label: 0,
+    userId: `intern-${id}`,
+    userName: `Estagiário ${id}`,
+    accessLevel: "guest",
+    hourRange: [9, 17],
+    actionsPerSession: [5, 18],
+    actionWeights: {
+      Clientes: 6,
+      Empresa: 2,
+      Contratos: 1,
+      "Gestão de Contratos": 1,
+      Sistema: 1,
+    },
+    moduleWeights: {
+      Clientes: 6,
+      Empresa: 2,
+      Contratos: 1,
+      "Gestão de Contratos": 1,
+      Sistema: 1,
+    },
+    errorProbability: 0.08,
+    ipVariation: false,
+    geoVariation: false,
+    deviceVariation: false,
+    loginAttemptRange: [1, 2],
+    inactivityRange: [90000, 300000],
+    burstProbability: 0.02,
+    sessionDurationRange: [15, 120],
   };
 }
 
@@ -432,8 +500,28 @@ export function generateDataset(totalSamples: number = 10000): {
   const normalCount = Math.floor(totalSamples * normalRatio);
   const suspiciousCount = totalSamples - normalCount;
 
+  const normalCreators = [
+    createNormalWorker,
+    createNormalManager,
+    createNormalAnalyst,
+    createNormalIntern,
+  ];
+  const suspiciousCreators = [
+    createDataExfiltration,
+    createPrivilegeEscalation,
+    createAccountCompromise,
+    createInsiderThreat,
+  ];
+  const targetPerNormal = Math.floor(normalCount / normalCreators.length);
+  const targetPerSuspicious = Math.floor(
+    suspiciousCount / suspiciousCreators.length,
+  );
+
   console.log(
     `Generating ${totalSamples} samples (${normalCount} normal, ${suspiciousCount} suspicious)...`,
+  );
+  console.log(
+    `~${targetPerNormal} per normal profile, ~${targetPerSuspicious} per suspicious profile.`,
   );
 
   const allLogs: RawLogRow[] = [];
@@ -443,40 +531,37 @@ export function generateDataset(totalSamples: number = 10000): {
   let suspiciousGenerated = 0;
   let profileId = 0;
 
-  // Generate normal profiles
-  while (normalGenerated < normalCount) {
-    profileId++;
-    const profile =
-      Math.random() < 0.6
-        ? createNormalWorker(profileId)
-        : createNormalManager(profileId);
-    const logs = generateSessionLogs(profile);
-    for (const log of logs) {
-      logLabels.set(log.id, profile.label);
-      allLogs.push(log);
-      normalGenerated++;
-      if (normalGenerated >= normalCount) break;
+  // Generate normal profiles (~1000 per profile)
+  for (const creator of normalCreators) {
+    let count = 0;
+    while (count < targetPerNormal) {
+      profileId++;
+      const profile = creator(profileId);
+      const logs = generateSessionLogs(profile);
+      for (const log of logs) {
+        logLabels.set(log.id, profile.label);
+        allLogs.push(log);
+        count++;
+        normalGenerated++;
+        if (count >= targetPerNormal) break;
+      }
     }
   }
 
-  // Generate suspicious profiles
-  const suspiciousCreators = [
-    createDataExfiltration,
-    createPrivilegeEscalation,
-    createAccountCompromise,
-    createInsiderThreat,
-  ];
-
-  while (suspiciousGenerated < suspiciousCount) {
-    profileId++;
-    const creator = pick(suspiciousCreators);
-    const profile = creator(profileId);
-    const logs = generateSessionLogs(profile);
-    for (const log of logs) {
-      logLabels.set(log.id, profile.label);
-      allLogs.push(log);
-      suspiciousGenerated++;
-      if (suspiciousGenerated >= suspiciousCount) break;
+  // Generate suspicious profiles (~1000 per profile)
+  for (const creator of suspiciousCreators) {
+    let count = 0;
+    while (count < targetPerSuspicious) {
+      profileId++;
+      const profile = creator(profileId);
+      const logs = generateSessionLogs(profile);
+      for (const log of logs) {
+        logLabels.set(log.id, profile.label);
+        allLogs.push(log);
+        count++;
+        suspiciousGenerated++;
+        if (count >= targetPerSuspicious) break;
+      }
     }
   }
 
