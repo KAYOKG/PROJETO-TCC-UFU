@@ -56,7 +56,7 @@ export function LoginPage() {
           Sistema RAA
         </Typography>
         <Typography variant="body2" color="text.secondary" align="center" sx={{ mb: 3 }}>
-          Corretora de Café — Análise de Risco
+          Corretora de Café com Análise de Risco
         </Typography>
         {sessionEndedMessage && (
           <Typography color="error" variant="body2" align="center" sx={{ mb: 2 }}>
