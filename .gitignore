@@ -14,9 +14,6 @@ dist-ssr
 
 # Server data
 server/data/*.db
-server/data/trained/
-server/data/synthetic/
-server/data/hyperparam_results.json
 server/node_modules
 
 # Editor directories and files

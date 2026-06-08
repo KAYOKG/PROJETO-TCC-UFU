@@ -1,0 +1,212 @@
+[
+  {
+    "featureName": "hourOfDay",
+    "min": 0,
+    "max": 23,
+    "mean": 11.8544,
+    "std": 6.447945458826355
+  },
+  {
+    "featureName": "dayOfWeek",
+    "min": 0,
+    "max": 6,
+    "mean": 2.8613,
+    "std": 2.006106255909653
+  },
+  {
+    "featureName": "accessLevelEncoded",
+    "min": 1,
+    "max": 3,
+    "mean": 2.125,
+    "std": 0.7806247497997998
+  },
+  {
+    "featureName": "actionTypeCreate",
+    "min": 0,
+    "max": 1,
+    "mean": 0.2252,
+    "std": 0.4177139691223667
+  },
+  {
+    "featureName": "actionTypeRead",
+    "min": 0,
+    "max": 1,
+    "mean": 0.4307,
+    "std": 0.4951742218654239
+  },
+  {
+    "featureName": "actionTypeUpdate",
+    "min": 0,
+    "max": 1,
+    "mean": 0.172,
+    "std": 0.3773804446444287
+  },
+  {
+    "featureName": "actionTypeDelete",
+    "min": 0,
+    "max": 1,
+    "mean": 0.1294,
+    "std": 0.33564213084771555
+  },
+  {
+    "featureName": "actionTypeLogin",
+    "min": 0,
+    "max": 0,
+    "mean": 0,
+    "std": 0
+  },
+  {
+    "featureName": "actionTypeConfig",
+    "min": 0,
+    "max": 1,
+    "mean": 0.0427,
+    "std": 0.20217989514292384
+  },
+  {
+    "featureName": "moduleClientes",
+    "min": 0,
+    "max": 1,
+    "mean": 0.25,
+    "std": 0.4330127018922193
+  },
+  {
+    "featureName": "moduleEmpresa",
+    "min": 0,
+    "max": 1,
+    "mean": 0.1211,
+    "std": 0.3262434520415421
+  },
+  {
+    "featureName": "moduleContratos",
+    "min": 0,
+    "max": 1,
+    "mean": 0.2613,
+    "std": 0.43934304364587273
+  },
+  {
+    "featureName": "moduleGestao",
+    "min": 0,
+    "max": 1,
+    "mean": 0.2451,
+    "std": 0.430146475052424
+  },
+  {
+    "featureName": "moduleSistema",
+    "min": 0,
+    "max": 1,
+    "mean": 0.1225,
+    "std": 0.32786239491595087
+  },
+  {
+    "featureName": "resultEncoded",
+    "min": 0,
+    "max": 1,
+    "mean": 0.9181,
+    "std": 0.27421230825767284
+  },
+  {
+    "featureName": "sessionDurationMinutes",
+    "min": 0,
+    "max": 589.6934833333333,
+    "mean": 87.39959222166681,
+    "std": 98.75152135678266
+  },
+  {
+    "featureName": "actionFrequency",
+    "min": 0,
+    "max": 50,
+    "mean": 23.5026,
+    "std": 16.732584774624673
+  },
+  {
+    "featureName": "actionVariety",
+    "min": 0,
+    "max": 5,
+    "mean": 3.933,
+    "std": 1.243185826817673
+  },
+  {
+    "featureName": "actionSequenceEntropy",
+    "min": 0,
+    "max": 2.321928094887362,
+    "mean": 1.6476003956655456,
+    "std": 0.5345436971768778
+  },
+  {
+    "featureName": "moduleAccessCount",
+    "min": 0,
+    "max": 5,
+    "mean": 4.0712,
+    "std": 1.3162562668417617
+  },
+  {
+    "featureName": "sensitiveDataAccessCount",
+    "min": 0,
+    "max": 48,
+    "mean": 13.4604,
+    "std": 11.592774984446091
+  },
+  {
+    "featureName": "errorRate",
+    "min": 0,
+    "max": 1,
+    "mean": 0.08163717902238912,
+    "std": 0.1372727226780578
+  },
+  {
+    "featureName": "avgTimeBetweenActions",
+    "min": 0,
+    "max": 1517.2682,
+    "mean": 235.04392242779122,
+    "std": 244.2931053687458
+  },
+  {
+    "featureName": "burstScore",
+    "min": 0,
+    "max": 16,
+    "mean": 0.7537,
+    "std": 1.5705528676233236
+  },
+  {
+    "featureName": "networkLatency",
+    "min": -25.556736528694046,
+    "max": 130.04392856456516,
+    "mean": 50.01986231809194,
+    "std": 19.945293831889778
+  },
+  {
+    "featureName": "geoDistanceFromUsual",
+    "min": 0,
+    "max": 1138.810533213539,
+    "mean": 34.692954905802736,
+    "std": 120.70358152961924
+  },
+  {
+    "featureName": "ipChangeFlag",
+    "min": 0,
+    "max": 1,
+    "mean": 0.0904,
+    "std": 0.286753971201761
+  },
+  {
+    "featureName": "loginAttempts",
+    "min": 1,
+    "max": 8,
+    "mean": 2.1938,
+    "std": 1.7839959529102782
+  },
+  {
+    "featureName": "inactivitySeconds",
+    "min": 0.008,
+    "max": 299.925,
+    "mean": 85.01109499999987,
+    "std": 75.95612496962964
+  },
+  {
+    "featureName": "isNewDevice",
+    "min": 0,
+    "max": 0,
+    "mean": 0,
+    "std": 0
+  }
+]
