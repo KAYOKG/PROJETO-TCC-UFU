@@ -1,6 +1,6 @@
 # Análise Comportamental com Machine Learning
 
-**Trabalho de Conclusão de Curso — Bacharelado em Sistemas de Informação**
+**Trabalho de Conclusão de Curso - Bacharelado em Sistemas de Informação**
 Universidade Federal de Uberlândia (UFU), Campus Monte Carmelo, MG
 
 **Autor:** Kayo Galdino Gomes Rocha
