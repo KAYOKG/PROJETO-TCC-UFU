@@ -434,7 +434,7 @@ Parâmetros treináveis: 4.993
 
 | Parâmetro         | Valor                                                     |
 | ----------------- | --------------------------------------------------------- |
-| Otimizador        | Adam (learning rate = 0,001)                              |
+| Otimizador        | Adam (learning rate = 0,0005)                              |
 | Função de perda   | Binary Crossentropy                                       |
 | Épocas            | 50                                                        |
 | Batch size        | 64                                                        |
